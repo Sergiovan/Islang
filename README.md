@@ -32,3 +32,6 @@ Run with `Islang.exe path/to/file.isl` to run `path/to/file.isl`.
 - Test how good the probabilities are
 - Fix empty blocks showing text on the console
 - Fix errors when lines are too damn long
+- Stupid-proof reading of files in `Scanner.cpp` (Not that I'd ever read myself out of memory or anything...)
+- Ctrl+C support
+- Fix this random access error? Where is this even coming from?
