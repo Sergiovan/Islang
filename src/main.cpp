@@ -8,8 +8,10 @@
 
 #endif
 
+#include <csignal>
 #include <iostream>
 #include <locale>
+
 
 #include "AST.h"
 #include "Character.h"
@@ -35,6 +37,11 @@ int main(int argc, char** argv) {
     }
 #endif
 
+    signal(SIGSEGV, [](int){
+        std::cout << "SIGSEGV caught, aborting process" << std::endl;
+        exit(1);
+    });
+
     if(argc < 2){
         std::cout << "Please specify the file to interpret as an argument to this program. "
                      "For example: \"Islang example.isl\" or \"Islang path/to/example.isl\"" << std::endl;
@@ -45,16 +52,24 @@ int main(int argc, char** argv) {
     auto slash = file.find_last_of('/');
     std::string cwd;
     if(slash != std::string::npos){
-        cwd = file.substr(slash + 1);
+        cwd = file.substr(0, slash);
     }else{
         cwd = "";
     }
 
-    ns_interpreter::Interpreter itp("dat");
+    {
+        std::ifstream filestream(file);
+        if (!filestream.good()) {
+            std::cout << "File does not exist" << std::endl;
+            return -1;
+        }
+    } //TODO BETTER
+
+    ns_interpreter::Interpreter itp(cwd);
     ns_ast::AST *program = nullptr;
     {
         ns_parser::Parser p;
-        program = p.read_file("dat/example.isl");
+        program = p.read_file(file);
     }
     if(program){
         try {

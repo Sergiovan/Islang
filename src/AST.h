@@ -64,17 +64,17 @@ namespace ns_ast {
     };
 
     struct value { //Should be union, alas, cannot be union :(
-        float                    n;   //Number
-        bool                     b;   //Boolean
-        std::string              s;   //String
-        int                      v;   //Enum value
-        ns_variable::Variable*   var; //Variables
-        std::vector<AST*>        cs;  //Complex string
-        std::vector<std::string> e;   //Enum
-        list_node                l;   //List
-        unary_node               un;  //Unary
-        binary_node              bin; //Binary
-        block_node               blk; //Block
+        float                    n = -1;   //Number
+        bool                     b = false;   //Boolean
+        std::string              s = "";   //String
+        int                      v = -1;   //Enum value
+        ns_variable::Variable*   var = nullptr; //Variables
+        std::vector<AST*>        cs = {};  //Complex string
+        std::vector<std::string> e = {};   //Enum
+        list_node                l = {node_type::NONE, {}};   //List
+        unary_node               un = {"", nullptr};  //Unary
+        binary_node              bin = {"", nullptr, nullptr}; //Binary
+        block_node               blk = {NONE_BLOCK, "", {}}; //Block
     };
 
     struct AST {

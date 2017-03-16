@@ -18,7 +18,7 @@
 
 namespace ns_lexer {
 
-    Token::Token() : content(""), file(), string(), is_file(false), index(-1),
+    Token::Token() : content(""), file(nullptr), string(nullptr), is_file(false), index(-1),
                      line(-1), col(-1), line_start(-1), type(grammar::token_type::NONE){
 
     }
