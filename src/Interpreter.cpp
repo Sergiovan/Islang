@@ -177,23 +177,23 @@ namespace ns_interpreter {
         }else{
             switch(ileft->type){
                 case NUMBER:
-                    return left->val.n == right->val.n;
+                    return ileft->val.n == iright->val.n;
                 case STRING:
-                    return left->val.s == right->val.s;
+                    return ileft->val.s == iright->val.s;
                 case BOOLEAN:
-                    return left->val.b == right->val.b;
+                    return ileft->val.b == iright->val.b;
                 case LIST:
-                    if(left->val.l.nodes.size() != right->val.l.nodes.size()){
+                    if(ileft->val.l.nodes.size() != iright->val.l.nodes.size()){
                         return false;
                     }
-                    for(size_t i = 0; i < left->val.l.nodes.size(); i++){
-                        if(!equal(left->val.l.nodes[i], right->val.l.nodes[i])){
+                    for(size_t i = 0; i < ileft->val.l.nodes.size(); i++){
+                        if(!equal(ileft->val.l.nodes[i], iright->val.l.nodes[i])){
                             return false;
                         }
                     }
                     return true;
                 case VALUE:
-                    return left->val.v == right->val.v;
+                    return ileft->val.v == iright->val.v;
                 case ENUM:
                 case VARIABLE:
                 case CSTRING:

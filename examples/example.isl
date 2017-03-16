@@ -42,7 +42,7 @@ location island: #Global scope may only contain one location
             name   "Chest"
             repr   "There's a chest"                  #Repr shows strings on the console, in the color of the location they're in
             repr   "It's locked" ~ lock = locks.KEY   #~ is the if operator. It makes repr conditional. If the right side of ~ evaluates to true, it will show on the console, else it will not.
-            repr   "There are 2 buttons, one colored {colors[0]} and the other one {colors[1]}" ~ colors #For non-boolean values, it will test the truthyness of a variable. Empty lists, empty strings and zero evaluate to false, the rest evaluates to true.
+            else repr   "There are 2 buttons, one colored {colors[0]} and the other one {colors[1]}" ~ colors #For non-boolean values, it will test the truthyness of a variable. Empty lists, empty strings and zero evaluate to false, the rest evaluates to true.
 
             contains cube (always) #Always is a keyword meaning "true". There's also "never", for "false". Contains is another block type. It is exactly the same as "location", and only exists to separate the place you're making into pieces.
             contains boots (5%):  #The boots will only appear 5% of the times when running this program. If they don't appear, none of the text it should show will show, and none of the blocks contained within will show either

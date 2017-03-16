@@ -98,11 +98,11 @@ namespace ns_ast {
             int oleft = 0, int oright = 0);
         void print(int depth = 0);
 
-        virtual ~AST() = default;
+        /*virtual ~AST() = default;
         AST(const AST& other) = default;
         AST(AST&& other) = default;
         AST& operator= (const AST& other) = default;
-        AST& operator= (AST&& other) = default;
+        AST& operator= (AST&& other) = default;*/
     };
 
     void indent(int depth);
