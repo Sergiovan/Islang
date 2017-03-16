@@ -797,12 +797,13 @@ namespace ns_interpreter {
                 }
             }
             delete [] nodes;
+            nodes = nullptr;
             if(num == 1){
                 AST* ret = list->val.l.nodes[selected[0]];
                 if(ret->type == BINARY && ret->val.bin.op == S_IF){
                     ret = ret->val.bin.left;
                 }
-                return ret;
+                return new AST(*ret);
             }else{
                 std::vector<AST*> ret;
                 for(auto& i : selected){

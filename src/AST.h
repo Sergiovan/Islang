@@ -74,7 +74,7 @@ namespace ns_ast {
         list_node                l = {node_type::NONE, {}};   //List
         unary_node               un = {"", nullptr};  //Unary
         binary_node              bin = {"", nullptr, nullptr}; //Binary
-        block_node               blk = {NONE_BLOCK, "", {}}; //Block
+        block_node               blk = {NONE_BLOCK, "", {}};
     };
 
     struct AST {
@@ -97,6 +97,12 @@ namespace ns_ast {
         AST(block_type type, std::string name, std::vector<AST *> &&statements, ns_lexer::Token token,
             int oleft = 0, int oright = 0);
         void print(int depth = 0);
+
+        virtual ~AST() = default;
+        AST(const AST& other) = default;
+        AST(AST&& other) = default;
+        AST& operator= (const AST& other) = default;
+        AST& operator= (AST&& other) = default;
     };
 
     void indent(int depth);

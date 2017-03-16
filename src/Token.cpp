@@ -8,7 +8,6 @@
 #include <memory>
 #include <sstream>
 #include <string>
-#include <c++/6.3.0/cassert>
 
 #include "Color.h"
 #include "Grammar.h"

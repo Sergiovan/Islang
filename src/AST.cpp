@@ -166,4 +166,8 @@ namespace ns_ast {
         }
     }
 
+   /* AST::~AST() {
+        std::cout << "Called ~AST()" << std::endl;
+        print();
+    }*/
 }
