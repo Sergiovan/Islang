@@ -1,0 +1,118 @@
+(* Basics *)
+letter = "A" | "B" | "C" | "D" | "E" | "F" | "G"
+       | "H" | "I" | "J" | "K" | "L" | "M" | "N"
+       | "O" | "P" | "Q" | "R" | "S" | "T" | "U"
+       | "V" | "W" | "X" | "Y" | "Z" | "a" | "b"
+       | "c" | "d" | "e" | "f" | "g" | "h" | "i"
+       | "j" | "k" | "l" | "m" | "n" | "o" | "p"
+       | "q" | "r" | "s" | "t" | "u" | "v" | "w"
+       | "x" | "y" | "z" ;
+
+digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
+
+whitespace = " " | "\t" | "\n" ;
+
+underscore = "_" ;
+
+dot = "." ;
+
+legal_symbol = underscore | "?" | "!" ;
+       
+symbol = ? every other character ? ;
+
+character = letter | digit | legal_symbol | dot | whitespace | symbol ;
+    
+(* Valid names for identifiers *)
+identifier = ["::"] , underscore | letter, {letter | digit | legal_symbol | "."}] ;
+
+(* Keywords *)
+kw_else = "else" ;
+kw_repr = "repr" ;
+
+kw_import = "import" ;
+kw_generate = "generate" ;
+
+kw_use = "use" ;
+kw_as = "as" ;
+
+kw_location = "location" ;
+kw_contains = "contains" ;
+kw_event = "event";
+
+
+
+typename = "bool" | "int" | "str" | "list" | "enum" | "val" ;
+blockname = kw_location | kw_contains | kw_event ;
+keywords = "appear" | "color" | "name" | "opts" ;
+unary_logic = "not" ;
+binary_logic = "and" | "or" ;
+list_operators = "*" | "/" | "**" | "//" ;
+comparison_operators = "=" | "~=" ;
+ifexpr_operator = "~" ;
+is_operator = "->" ;
+
+(* Types (Literals only) *)
+boolean = "true" | "always" | "false" | "never" | number, ("%" | "^");
+
+integer = digit, {digit} ;
+number = integer, [".", digit, {digit}] ;
+
+string = '"', {character | ("${", value, "}")}, '"' ;
+
+list_element = boolean | number | string | identifier, [if_expr] ;
+list = "[", list_element , {",", list_element}, "]" ;
+
+enumeration_name = underscore | letter, {letter | digit | legal_symbol} ;
+enumeration = "{", enumeration_name, {",", enumaration_name}, "}" ;
+
+literal = number | string | boolean ;
+literal_extended = literal | list | enumeration ;
+
+(* Expressions that come from a list *)
+list_expr = "(", list_expr, ")"
+          | (list | list_expr | identifier), "[" , integer , "]"
+          | (list | list_expr | identifier), list_operators , [integer | identifier]
+          | [integer | identifier], list_operators, (list | list_expr | identifier)
+          | identifier, "{", boolean_expr, {",", boolean_expr}, "}" 
+          ;
+
+(* Expressions that might evaluate to boolean *)
+boolean_expr = "(" , boolean_expr , ")" 
+             | unary_logic, (boolean | identifier | boolean_expr)
+             | (boolean | identifier | boolean_expr), binary_logic, (boolean | identifier | boolean_expr), 
+             | value, comparison_operators, value
+             ; 
+             
+value = "(", value, ")" | boolean_expr | list_expr | list | identifier | literal ; 
+
+if_expr = ifexpr_operator, boolean_expr ;
+
+expr = "(", expr, ")" | enumeration | value ; 
+
+imprt_statement = kw_import, (identifier | string), [kw_as, identifier] ; 
+decl_statement  = typename, identifier, is_operator, expr ;
+ass_statement   = identifier, is_operator, expr;
+key_statement   = keyword, value ; 
+use_statement   = kw_use, identifier, [kw_as, identifier] ;
+repr_statement  = kw_repr, string, [if_expr], {{whitespace}, kw_else, kw_repr, string, [if_expr]} ;
+bloc_statement  = blockname, identifier, ["(", boolean_expr, ")"], [":", block] ;
+loc_statement   = kw_location, identifier, ["(", boolean_expr, ")"], [":", block] ;
+gen_statement   = kw_generate, identifier ;
+
+statement = {whitespace}, 
+    ( decl_statement
+    | ass_statement
+    | key_statement
+    | use_statement
+    | repr_statement
+    | bloc_statement
+    | expr
+) ;
+
+block = statement, {statement} ;
+
+grammar = 
+        {imprt_statement},
+        {decl_statement},
+        [loc_statement],
+        [gen_statement];
