@@ -60,8 +60,8 @@ location island: #Global scope may only contain one location
 
             str fruit  -> fruits.fruits** #Non-exclusive unbiased pick
 
-            repr       "It's a {fruit} tree. It has {fruit}s"                  ~ not island.floating_island.chest.is_locked
-            else repr  "It has {colors[0]} {fruit}s and {colors[1]} {fruit}s" ~ what_lock = island.floating_island.chest.locks.KEY # = checks that both sides have the same type and value. ~= checks for different type or different value
+            repr       "It's a {fruit} tree. It has {fruit}s"                  ~ not fi.chest.is_locked
+            else repr  "It has {colors[0]} {fruit}s and {colors[1]} {fruit}s" ~ what_lock = fi.chest.locks.KEY # = checks that both sides have the same type and value. ~= checks for different type or different value
 
             event take_fruit:
                 name  "Take a fruit"

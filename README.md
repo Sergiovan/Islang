@@ -131,8 +131,8 @@ location blah:
 
 Blocks also have internal properties that affect how they are shown in the console. They can be modified using the [block keywords](#block_keywords). These are:
 - Name: The name the block will show in the console, if not set, the block's name will be the name you gave it in the program.
-- Appear chance: The chance the block and blocks belonging to this block will appear when showing the program. As mentioned, it can also be specified when declaring the block, in parenthesis: `location name(50%):`
-- Color: The color the block and the associated strings will show on the console.
+- Appear chance: The chance the block and blocks belonging to this block will appear when showing the program. As mentioned, it can also be specified when declaring the block, in parenthesis: `location name(50%):`. The default is `100%`, or to always appear.
+- Color: The color the block and the associated strings will show on the console. The default is the console's default color.
 
 ### Operators
 Islang has a bunch of operators, so for convenience I'll divide them in 3 categories: Boolean operators (which return a boolean), List operators (which operate on list) and other operators (Whose function is different from the others)
@@ -175,33 +175,68 @@ import colors as color_list
 num re_pi -> pi.pi
 list re_colors -> color_list.colors
 ```
+
 ###### Generate
 The `generate` keyword is placed at the very end of a program, and it tells the program which block is the main block when it needs to print the program to the console. It is used like so: `generate block_name`, where `block_name` is the name of a block.
 
-*TODO FINISH LANGUAGE SYNTAX AND THOSE SHENANIGANS*
+###### Block keywords
+- `name`: To set the name of the block. Used like `name "Name of the block"`. Setting the name more than once per block is not allowed
+- `color`: To set the color of the block. Used like `color ::color_name`. Setting the color more than once per block is not allowed.
+- `appear`: To set the appearance chance of the block, if not already specified. Used like `appear chance`, where chance is a probability or a not-probability. Setting it more than once per block is not allowed.
+- `use`: To "import" variables or blocks into the current block. It can be used like so: `use var_or_block as alias`, where `var_or_block` is the name of a variable or a block, and `alias` is the name you want to use it as. If the alias is not present, it will be accessible by its original name, as if it were in the current scope.
+  ```
+  location main:
+      location sub:
+          num phi -> 7
+      location sib:
+          use main.sub.phi as phi
+          use main.sub as sibling
+          num phi_1 -> main.sub.phi # Can do
+          num phi_2 -> pho # Can do too, using the aliased version
+          num phi_3 -> sibling.phi # Also allowed
+  ```
+- `repr`: The `repr` keyword (Stands for "representation") is used to show text on the console whenever the block it belongs to is printed. It's used like so `repr "Some string" ~ if_expr`, where `if_expr` is a value that evaluates to a boolean. If `~ if_expr` is not present, the string will always be printed to screen, otherwise it will only be printed if `if_expr` evaluates to true. 
+- `else`: Always used in conjunction with `repr`, and always used right after a conditional repr statement. Used like so `else repr "Some string" ~ if_expr`. An else repr statement will only be evaluated if the previous repr statement's `if_expr` was evaluated, **and** it evaluated to false. If the previous repr's statmenent condition was not evaluated (Which can happen if the previous statement is also an else repr statement) it won't be evaluated. This means that, for a group of consecutive else repr statements, plus the preceding single repr statement, only one will ever be printed to string.
+  ```
+  repr "12 + 144 + 20" ~ 10%         # Only one
+  else repr "+ 3 * sqrt(4)" ~ 20%    # of these
+  else repr "/ 7 + 5 * 11" ~ 30%     # will be 
+  else repr "9² + 0" ~ 40%           # eventually printed
+  else repr "How's that for poetry?" # to console
+  ```
+- `opts`: The opts keyword (Stands for "options") works similarly to `repr`, except it takes a list of strings (Of which it will print one as if picked by the `pick` operator). It cannot, however, have a condition attached. It is used like so: `opts ["Option 1", "Option 2", "Option 3"]`
 
 ## CLI
 * `run`: Will run the interpreted program once
 * `exit`: Will exit the program
 
 ## TODO
-- ~~Add examples~~
-- Fix the ecbn spec
-- Fix the showing of the parser errors, they're all over the place
-- Pretty sure there's a memory leak or two somewhere
-- Add CLI interpreting while running the program
-- Add CLI reading of files if none specified
-- Add CLI everything, actually
-- Picking from enums directly
-- Convert lists with `identifier{probabilities}` syntax
-- Allow repr and opts to take variables, or any value, really
-- Test how good the probabilities are
-- Fix empty blocks showing text on the console
-- Fix errors when lines are too damn long
-- Stupid-proof reading of files in `Scanner.cpp` (Not that I'd ever read myself out of memory or anything...)
-- Ctrl+C support
-- ~~Fix this random access error? Where is this even coming from?~~
-- Fix program structure being fixed
-- Think of a name for non-percentages
-- Think of a name for the magical enum-to-list expression
-- Make enum-to-list work without percentages, somehow
+- **Syntax**
+  - Convert lists with `identifier{probabilities}` syntax
+  - Make enum-to-list work without percentages, somehow
+  - Picking from enums directly
+  - Allow `opts` to have probabilities in its elements 
+  - Allow `repr` and `opts` to take variables, or any value, really
+  - Allow `repr` and `opts` to be used interchangeably (Add if expression to opts, and allow them to be `else`'d)
+  - Fix program structure being fixed
+  - Fix the ecbn spec
+- **Interpreter**
+  - Stupid-proof reading of files in `Scanner.cpp` (Not that I'd ever read myself out of memory or   anything...)
+  - Fix the showing of the parser errors, they're all over the place
+  - Fix errors when lines are too damn long
+- **CLI**
+  - Add CLI interpreting while running the program
+  - Add CLI reading of files if none specified
+  - Add CLI everything, actually
+  - Ctrl+C support
+- **Bugs**
+  - ~~Fix this random access error? Where is this even coming from?~~
+  - Pretty sure there's a memory leak or two somewhere
+  - Fix empty blocks showing text on the console
+- **Testing**
+  - Test how good the probabilities are
+- **Git**
+  - ~~Add examples~~
+- **Misc**
+  - Think of a name for non-percentages
+  - Think of a name for the magical enum-to-list expression
