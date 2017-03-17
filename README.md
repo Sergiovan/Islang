@@ -16,10 +16,10 @@ Run with `Islang.exe path/to/file.isl` to run `path/to/file.isl`.
 ### Program structure
 
 An Islang program consists of 4 main parts:
-* [Imports]()
+* [Imports](#import)
 * [Global declarations](#variables)
 * [Main location](#blocks)
-* [Generate statement]()
+* [Generate statement](#generate)
 
 The order of these parts is important (*Will probably change in the future, if I get to it*), and they are all optional. This means a blank file is technically valid, although a bit unhelpful.
 Whitespace at the start of the line is important, as it indicates blocks and scopes. Consecutive lines indented the same amount are part of the same block, and probably the same scope as well. 
