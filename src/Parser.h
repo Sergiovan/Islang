@@ -22,10 +22,10 @@ namespace ns_parser {
     public:
         Parser();
         ns_ast::AST* read_file(std::string filename);
-        ns_ast::AST* read_string(std::string string);
+        ns_ast::AST* read_string(std::string string); //TODO Errors
     private:
         void sanitize();
-        ns_ast::AST* run();
+        ns_ast::AST* run(bool string = false);
 
         void read();
         int whitespace();

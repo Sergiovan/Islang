@@ -1,7 +1,6 @@
 //
 // Created by Sergiovan on 11-Mar-17.
 //
-
 #include <algorithm>
 #include <chrono>
 #include <iomanip>
@@ -11,6 +10,7 @@
 #include <string>
 #include <stack>
 
+#include "Compat.h"
 #include "Color.h"
 #include "Interpreter.h"
 #include "InterpreterException.h"
@@ -99,7 +99,7 @@ namespace ns_interpreter {
         using namespace ns_ast;
         std::stringstream ss;
         if(!node){
-            throw InterpreterError("Invalid stringify target");
+            throw InterpreterError(error(node, "Invalid stringify target"));
         }
         switch(node->type){
             case NUMBER:
@@ -135,7 +135,7 @@ namespace ns_interpreter {
             case UNARY:
             case BLOCK:
             case NONE:
-                throw InterpreterError("Invalid stringify target");
+                throw InterpreterError(error(node, "Invalid stringify target"));
         }
         return ss.str();
     }
@@ -394,10 +394,12 @@ namespace ns_interpreter {
                 std::string pre_token, token;
                 std::getline(ss, pre_token, grammar::C_DOT);
                 std::getline(ss, token, grammar::C_DOT);
-                Scope* start = current->find_scope(pre_token);
-                if(!start){
-                    start = global->find_scope(pre_token);
-                    if(!start){
+                Scope* cur = current;
+                Scope* start = cur->find_scope(pre_token);
+                while(!start){
+                    cur = cur->get_parent();
+                    start = cur->find_scope(pre_token);
+                    if(!start && cur == global){
                         die(node, "Scope \"" + pre_token + "\" cannot be found");
                     }
                 }
@@ -453,9 +455,11 @@ namespace ns_interpreter {
 
             auto as_begin  = that->val.s.find_last_of("/");
             auto as_end    = that->val.s.find_last_of(".");
-            std::string as = that->val.s; //TODO REDO REDO REDO
+            std::string as   = that->val.s; //TODO REDO REDO REDO
+            std::string ncwd = that->val.s;
             if(as_begin != std::string::npos){
                 as = as.substr(as_begin + 1);
+                ncwd = ncwd.substr(0, as_begin);
             }
             if(as_end != std::string::npos){
                 as = as.substr(0, as_end - as_begin - 1);
@@ -475,6 +479,9 @@ namespace ns_interpreter {
             }
             Scope* imported = new Scope(current);
             Interpreter::import++;
+            bool relative = compat::isRelativePath(ncwd);
+            std::string scwd = cwd;
+            cwd = relative ? cwd + ncwd : ncwd;
             current->add(as, imported);
             go_in(as);
 
@@ -483,6 +490,7 @@ namespace ns_interpreter {
             interpret(program_imported);
 
             go_out();
+            cwd = scwd;
             Interpreter::import--;
             return node;
         }else if(op == K_NAME){
@@ -520,10 +528,7 @@ namespace ns_interpreter {
             if(operand->type != VARIABLE){
                 die(operand, "Operand not a valid identifier");
             }
-            Scope* c = current;
-            current = global;
             varscope vs = get_var_scope(operand->val.s, node);
-            current = c;
             if(!vs.s){
                 die(operand, "Block does not exist");
             }
@@ -677,7 +682,7 @@ namespace ns_interpreter {
                 }
 
             }else{
-                var = current->find_var(left->val.s, false);
+                var = get_var_scope(left->val.s, left).v;//current->find_var(left->val.s, false);
                 if(!var){
                     die(left, "Variable does not exist");
                 }else if(var->get_type() == ENUM){
@@ -688,7 +693,7 @@ namespace ns_interpreter {
                 var->reset();
                 var->set_value(right);
             }
-            return node;
+            return new AST(var, left->token, left->offset_left, left->offset_right);
         }else if(op == S_SPECIAL_SCOPE){
             if(left->type != VARIABLE){
                 die(left, "Argument is not an identifier");
@@ -896,10 +901,12 @@ namespace ns_interpreter {
             std::string pre_token, token;
             std::getline(ss, pre_token, grammar::C_DOT);
             std::getline(ss, token, grammar::C_DOT);
-            Scope* start = current->find_scope(pre_token);
-            if(!start){
-                start = global->find_scope(pre_token);
-                if(!start){
+            Scope* cur = current;
+            Scope* start = cur->find_scope(pre_token);
+            while(!start){
+                cur = cur->get_parent();
+                start = cur->find_scope(pre_token);
+                if(!start && cur == global){
                     die(node, "Scope \"" + pre_token + "\" cannot be found");
                 }
             }

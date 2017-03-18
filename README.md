@@ -2,11 +2,11 @@
 
 ## Description
 
-This is a lexer/parser/interpreter for a language I made up for my own amusement, Islang. It was made to generate random-ish environments given parameters, and some added useless features simply to see if I was able to do it. 
+This is a lexer/parser/interpre ter for a language I made up for my own amusement, Islang. It was made to generate random-ish environments given parameters, and some added useless features simply to see if I was able to do it. 
 
 Also included under `.spec` is a syntax highlight for [Notepad++](https://notepad-plus-plus.org/), for convenience. 
 
-Run with `Islang.exe path/to/file.isl` to run `path/to/file.isl`.
+Run with `Islang`~~`.exe path/to/file.isl` to run `path/to/file.isl`~~, then use the CLI.
 
 ## Language
 
@@ -15,8 +15,14 @@ Run with `Islang.exe path/to/file.isl` to run `path/to/file.isl`.
 [Read the wiki for more info on the language tho](https://github.com/Sergiovan/Islang/wiki)
 
 ## CLI
-* `run`: Will run the interpreted program once
+* `load` or `l`: Will load a given file. `load ../examples/example.isl`
+* `parse` or `p`: Will parse the loaded file
+* `run` or `r`: Will run the interpreted program once. If a block is given, it will only run that block. `run island.mountain`
+* `lp`: Load and subsequenty parse a given file. Equivalent to `l [file] ; p`. `lp ../examples/example.isl` 
+* `execute` or `e`: Execute arbitrary Islang code from the CLI. `e bool nbool -> 50%`
 * `exit`: Will exit the program
+
+You can put multiple commands in one line if you separate them with `;`. `l file.isl ; e main_loc.trim -> "Nope"`.
 
 ## FAQ
 
@@ -51,21 +57,22 @@ I don't know. Maybe you do?
   - Allow `opts` to have probabilities in its elements 
   - Allow `repr` and `opts` to take variables, or any value, really
   - Allow `repr` and `opts` to be used interchangeably (Add if expression to opts, and allow them to be `else`'d)
-  - Fix program structure being fixed
+  - Fix program structure being fixed (*In progress*)
   - Fix the ecbn spec
 - **Interpreter**
   - Stupid-proof reading of files in `Scanner.cpp` (Not that I'd ever read myself out of memory or   anything...)
   - Fix the showing of the parser errors, they're all over the place
   - Fix errors when lines are too damn long
 - **CLI**
-  - Add CLI interpreting while running the program
-  - Add CLI reading of files if none specified
-  - Add CLI everything, actually
-  - Ctrl+C support
+  - Add CLI interpreting while running the program (*In progress*)
+  - ~~Add CLI reading of files if none specified~~
+  - Add CLI everything, actually (*In progress*)
+  - ~~Ctrl+C support~~
 - **Bugs**
   - ~~Fix this random access error? Where is this even coming from?~~
   - Pretty sure there's a memory leak or two somewhere
   - Fix empty blocks showing text on the console
+  - Fix `use` and interpreting from different block
 - **Testing**
   - Test how good the probabilities are
 - **Git**

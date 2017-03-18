@@ -1,13 +1,3 @@
-#ifdef __WIN32__
-#define _WIN32_WINNT 0x0500
-#include <windows.h>
-
-#ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
-#define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x04
-#endif
-
-#endif
-
 #include <csignal>
 #include <iostream>
 #include <locale>
@@ -15,32 +5,49 @@
 
 #include "AST.h"
 #include "Character.h"
+#include "CLI.h"
 #include "Color.h"
+#include "Compat.h"
 #include "Interpreter.h"
 #include "Scanner.h"
 #include "Lexer.h"
 #include "Parser.h"
 #include "InterpreterError.h"
 
+std::vector<std::string> split_commands(std::string input);
+
 int main(int argc, char** argv) {
     setlocale(LC_ALL, "UTF-8");
-
-#ifdef __WIN32__
-    {
-        /* Garbage needed for windows console to take ANSI codes */
-        HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
-        DWORD dwMode = 0;
-        GetConsoleMode(hOut, &dwMode);
-        dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
-        SetConsoleOutputCP(65001);
-        SetConsoleMode(hOut, dwMode);
-    }
-#endif
+    compat::init();
 
     signal(SIGSEGV, [](int){
         std::cout << "SIGSEGV caught, aborting process" << std::endl;
         exit(1);
     });
+
+    signal(SIGTERM, [](int){
+        std::cout << "Ctrl-C detected" << std::endl;
+        exit(0);
+    });
+
+    //TODO Parse command line arguments
+    std::string input("");
+    ns_cli::CLI cli;
+
+    while(input != "exit"){
+        if(!input.empty()) {
+            for (auto &command : split_commands(input)) {
+                if (!command.empty()) {
+                    cli.execute(command);
+                }
+            }
+        }
+        std::cout << "> ";
+        std::getline(std::cin, input);
+    }
+
+
+    /*
 
     if(argc < 2){
         std::cout << "Please specify the file to interpret as an argument to this program. "
@@ -114,4 +121,50 @@ int main(int argc, char** argv) {
                   << color::ansi(color::ALL_RESET) << std::endl;
         return 1;
     }*/
+}
+
+std::vector<std::string> split_commands(std::string input){
+    if(input.find(";") == std::string::npos){
+        return {input};
+    }else{
+        std::vector<std::string> ret = {};
+        std::string current = "";
+        int depth = 0;
+        bool escape = false, quote_close = false;
+        for(auto& c : input){
+            current += c;
+            if(depth % 2 == 1 && c == '\\'){
+                escape = true;
+                continue;
+            }
+            if(c == '"' && !escape){
+                if(quote_close){
+                    depth--;
+                    quote_close = false;
+                }else{
+                    depth++;
+                    quote_close = true;
+                }
+                continue;
+            }
+            if(depth % 2 == 1 && c == '{' && !escape){
+                depth++;
+                quote_close = false;
+                continue;
+            }
+            if(depth > 0 && depth % 2 == 0 && c == '}' && !escape){
+                depth--;
+                quote_close = true;
+                continue;
+            }
+            escape = false;
+            if(depth == 0 && c == ';'){
+                current.pop_back();
+                ret.push_back(std::move(current));
+                current = "";
+            }
+        }
+        ret.push_back(std::move(current));
+        return ret;
+    }
 }

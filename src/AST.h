@@ -98,6 +98,8 @@ namespace ns_ast {
             int oleft = 0, int oright = 0);
         void print(int depth = 0);
 
+        //TODO delete function
+
         /*virtual ~AST() = default;
         AST(const AST& other) = default;
         AST(AST&& other) = default;

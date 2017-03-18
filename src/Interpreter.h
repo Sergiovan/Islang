@@ -18,6 +18,7 @@ namespace ns_interpreter {
     class Interpreter {
     public:
         Interpreter(std::string cwd);
+        //TODO Destructor, rule of 5
 
         ns_ast::AST* interpret(ns_ast::AST* node, bool all_the_way = false);
         void generate(std::string what = "");

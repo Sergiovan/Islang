@@ -10,7 +10,7 @@ ODIR = obj
 
 EXEC = Islang.exe
 
-SFLAGS = 
+SFLAGS = -lshlwapi
 
 ifeq ($(UNAME), Linux) #Linux machine
 EXEC = linux/islang
