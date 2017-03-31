@@ -62,7 +62,13 @@ namespace ns_cli{
                 cout << "Program not parsed correctly" << endl;
                 return;
             }
-            itp.generate(rest);
+            try {
+                itp.generate(rest);
+            }catch(std::exception const& ex){
+                cout << ex.what() << endl;
+                cout << "Could not generate" << endl;
+                return;
+            }
         }else if(command == "execute" || command == "e"){
             ns_ast::AST* line = nullptr;
             ns_parser::Parser prs;

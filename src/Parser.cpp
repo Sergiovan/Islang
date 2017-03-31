@@ -84,43 +84,17 @@ namespace ns_parser {
                 std::vector<ns_ast::AST *> stmts;
                 int as = next();
                 index = as;
-                while (found(grammar::K_IMPORT)) {
-                    push(index, line_end());
-                    stmts.push_back((ns_ast::AST *) find(&Parser::import_statement));
-                    pop();
+                while(!found(grammar::token_type::END)){
+                    stmts.push_back((ns_ast::AST *) find(&Parser::statement));
                     if (found(grammar::token_type::END)) {
                         break;
                     }
                     expect(grammar::token_type::NEWLINE);
                     index = next();
-                }
-                while (found(grammar::token_subtype::KEYWORD_TYPENAME)) {
-                    push(index, line_end());
-                    stmts.push_back((ns_ast::AST *) find(&Parser::declaration_statement));
-                    pop();
-                    if (found(grammar::token_type::END)) {
-                        break;
-                    }
-                    expect(grammar::token_type::NEWLINE);
-                    index = next();
-                }
-                if (found(grammar::K_LOCATION)) {
-                    push(ll, rl);
-                    stmts.push_back((ns_ast::AST *) find(&Parser::location_statement));
-                    index = next();
-                }
-                if (found(grammar::K_GENERATE)) {
-                    stmts.push_back((ns_ast::AST *) find(&Parser::generate_statement));
-                }
-                index = next();
-                if (index != -1 && tokens[index].get_type() != grammar::token_type::END) {
-                    throw ParserException(error("Found statement after generate"));
                 }
                 return new ns_ast::AST(ns_ast::PROGRAM, "", std::move(stmts), tokens[0]);
             }else{
-                ns_ast::AST* ret = find(&Parser::statement)             ||
-                                   find(&Parser::import_statement)      ||
-                                   find(&Parser::generate_statement);
+                ns_ast::AST* ret = find(&Parser::statement);
                 return ret;
             }
         }catch(ParserException& ex){
@@ -711,6 +685,8 @@ namespace ns_parser {
                find(&Parser::use_statement)         ||
                find(&Parser::repr_statement)        ||
                find(&Parser::block_statement)       ||
+               find(&Parser::import_statement)      ||
+               find(&Parser::generate_statement)    ||
                find(&Parser::expression);
         pop();
         was_cond_repr = next_was_cond_repr;

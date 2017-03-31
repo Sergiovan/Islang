@@ -92,6 +92,9 @@ namespace ns_interpreter {
             }
         }
         global->reset(true);
+        if(!s){
+            throw InterpreterException("No starting scope set (`generate` was not called)");
+        }
         _generate(s, s->props.level);
     }
 
@@ -113,7 +116,6 @@ namespace ns_interpreter {
                 break;
             case ENUM:
                 ss << "{";
-                //std::copy(node->val.e.begin(), node->val.e.end(), std::ostream_iterator<std::string>(ss, ", "));
                 for(auto it = node->val.e.begin(); it != node->val.e.end(); ++it){
                     ss << it->first;
                     if(it != --node->val.e.end()){
@@ -128,18 +130,29 @@ namespace ns_interpreter {
             case LIST:
                 ss << "[";
                 for(auto it = node->val.l.nodes.begin(); it != node->val.l.nodes.end(); ++it){
-                    ss << stringified(*it);
+                    ns_ast::AST* val = *it;
+                    if(val->type == BINARY && val->val.bin.op == grammar::S_IF){
+                        ss << stringified(val->val.bin.left);
+                        ss << " ~ ";
+                        ss << stringified(val->val.bin.right->val.un.operand);
+                        ss << val->val.bin.right->val.un.op;
+                    }else{
+                        ss << stringified(*it);
+                    }
                     if(it != node->val.l.nodes.end() - 1){
                         ss << ", ";
                     }
                 }
                 ss << "]";
                 break;
-            case VARIABLE:
+            /* These only happen from CLI. If not, something has gone terribly wrong */
             case CSTRING:
+            case VARIABLE:
             case BINARY:
             case UNARY:
             case BLOCK:
+                ss << stringified(interpret(node, true));
+                break;
             case NONE:
                 throw InterpreterError(error(node, "Invalid stringify target"));
         }
@@ -254,7 +267,6 @@ namespace ns_interpreter {
         std::string& name = s->props.name;
         std::stringstream ss;
         ss << color::ansi(color) << std::string(indent, ' ') << grammar::block_type_names[s->props.type] << " - " << name;
-
         Scope* c = current;
         current = s;
 
@@ -474,7 +486,7 @@ namespace ns_interpreter {
             go_out();
             cwd = scwd;
             Interpreter::import--;
-            return node;
+            return new AST(true, node->token, node->offset_left, node->offset_right);
         }else if(op == K_NAME){
             AST* io = interpret(operand, true);
             if(!io || io->type != STRING){
@@ -485,7 +497,7 @@ namespace ns_interpreter {
             }
             current->props.name = stringified(io);
             current->props.nameset = true;
-            return node;
+            return new AST(true, node->token, node->offset_left, node->offset_right);;
         }else if(op == K_APPEAR){
             AST* io = interpret(operand, true);
             if(!io || io->type != BOOLEAN){
@@ -495,7 +507,7 @@ namespace ns_interpreter {
                 die(node, "Current scope already has an appear value");
             }
             current->props.appear = operand;
-            return node;
+            return new AST(true, node->token, node->offset_left, node->offset_right);
         }else if(op == K_COLOR){
             AST* io = interpret(operand, true);
             if(!io || io->type != VALUE){
@@ -505,7 +517,7 @@ namespace ns_interpreter {
                 die(node, "Current scope already has a color");
             }
             current->props.color = io->val.v;
-            return node;
+            return new AST(true, node->token, node->offset_left, node->offset_right);
         }else if(op == K_GENERATE){
             if(operand->type != VARIABLE){
                 die(operand, "Operand not a valid identifier");
@@ -518,20 +530,20 @@ namespace ns_interpreter {
                 die(operand, "Block is not really a block");
             }
             if(import > 0){ //Skip if importing
-                return node;
+                return new AST(false, node->token, node->offset_left, node->offset_right);
             }
             if(start){
                 die(node, "Already issued generate");
             }
             start = s;
-            return node;
+            return new AST(true, node->token, node->offset_left, node->offset_right);
         }else if(op == K_REPR){
             AST* io = interpret(operand, true);
             if(!io || io->type != STRING){
                 die(node, "REPR result is not a string");
             }
             current->props.repr.emplace_back(operand, false);
-            return node;
+            return new AST(true, node->token, node->offset_left, node->offset_right);
         }else if(op == K_ELSE){
             if(operand->type != UNARY || (operand->val.un.op != K_REPR && operand->val.un.op != K_OPTS)){
                 die(node, "Else followed by invalid argument");
@@ -539,7 +551,7 @@ namespace ns_interpreter {
             interpret(operand);
             current->props.repr.pop_back();
             current->props.repr.emplace_back(operand->val.un.operand, true);
-            return node;
+            return new AST(true, node->token, node->offset_left, node->offset_right);
         }else if(op == K_OPTS){
             AST* io = interpret(operand, true);
             if(!io || io->type != STRING || operand->val.bin.left->type != LIST ||
@@ -547,7 +559,7 @@ namespace ns_interpreter {
                 die(node, "Options are not strings");
             }
             current->props.repr.emplace_back(operand, false);
-            return node;
+            return new AST(true, node->token, node->offset_left, node->offset_right);
         }else if(op == K_USE){
             if(operand->type != BINARY || operand->val.bin.op != K_AS){
                 die(node, "Malformed use statement");
@@ -567,7 +579,7 @@ namespace ns_interpreter {
             }else{
                 current->import(that->val.s, vs.s);
             }
-            return node;
+            return new AST(true, node->token, node->offset_left, node->offset_right);
         }else if(op == K_NOT){
             return new AST(!truthyness(interpret(operand, true)), operand->token);
         }else if(op == S_PERCENTAGE){

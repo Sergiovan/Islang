@@ -1,7 +1,7 @@
 #include <csignal>
+#include <cstring>
 #include <iostream>
 #include <locale>
-
 
 #include "AST.h"
 #include "Character.h"
@@ -33,6 +33,20 @@ int main(int argc, char** argv) {
     //TODO Parse command line arguments
     std::string input("");
     ns_cli::CLI cli;
+
+    if(argc > 1){
+        for(int i = 1; i < argc; i++){
+            if(!std::strcmp(argv[i], "--file")){
+                input = std::string("lp ") + argv[++i] + input;
+            }else if(!std::strcmp(argv[i], "--run")){
+                input += "r";
+            }else{
+                std::cout << "Unrecognized command \"" << argv[i] << "\"" << std::endl;
+                continue;
+            }
+            input += ";";
+        }
+    }
 
     while(input != "exit"){
         if(!input.empty()) {

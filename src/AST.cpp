@@ -34,7 +34,7 @@ namespace ns_ast {
 
     AST::AST(ns_variable::Variable *var, std::string varname, ns_lexer::Token token, int oleft, int oright) : AST(token, oleft, oright){
         type = VARIABLE;
-        val.var = var;
+        //val.var = var;
         val.s = varname;
     }
 
@@ -94,12 +94,12 @@ namespace ns_ast {
                 break;
             case VARIABLE:
                 cout << "Variable: " << val.s << endl;
-                if(val.var){
+                //if(val.var){
                     //TODO
-                }else{
+                //}else{
                     indent(depth + 1);
                     cout << "Value: NULL" <<endl;
-                }
+                //}
                 break;
             case VALUE:
                 cout << "Value: " << val.v << endl;
