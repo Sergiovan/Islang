@@ -55,7 +55,9 @@ namespace ns_ast {
 
     AST::AST(std::vector<std::string>&& e, ns_lexer::Token token, int oleft, int oright) : AST(token, oleft, oright){
         AST::type = ENUM;
-        val.e = e;
+        for(unsigned int i = 0; i < e.size(); i++) {
+            val.e[e[i]] = i;
+        }
     }
 
     AST::AST(std::string op, AST* operand, ns_lexer::Token token, int oleft, int oright) : AST(token, oleft, oright){
@@ -118,7 +120,7 @@ namespace ns_ast {
                 cout << "Enumeration: " << endl;
                 for(auto& elem : val.e){
                     indent(depth + 1);
-                    cout << elem << endl;
+                    cout << elem.first << endl;
                 }
                 break;
             case BINARY:

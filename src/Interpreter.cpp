@@ -86,7 +86,7 @@ namespace ns_interpreter {
     void Interpreter::generate(std::string what){
         Scope* s = start;
         if(what != ""){
-            s = get_var_scope(what, nullptr).s;
+            s = get_scope(what, nullptr);
             if(!s){
                 throw InterpreterException("Scope " + what + " cannot be found");
             }
@@ -113,7 +113,13 @@ namespace ns_interpreter {
                 break;
             case ENUM:
                 ss << "{";
-                std::copy(node->val.e.begin(), node->val.e.end(), std::ostream_iterator<std::string>(ss, ", "));
+                //std::copy(node->val.e.begin(), node->val.e.end(), std::ostream_iterator<std::string>(ss, ", "));
+                for(auto it = node->val.e.begin(); it != node->val.e.end(); ++it){
+                    ss << it->first;
+                    if(it != --node->val.e.end()){
+                        ss << ", ";
+                    }
+                }
                 ss << "}";
                 break;
             case VALUE:
@@ -386,46 +392,22 @@ namespace ns_interpreter {
         if(!node || node->type != ns_ast::VARIABLE){
             throw InterpreterError("Node is not a VARIABLE");
         }
-        if(node->val.var){
-            return node->val.var->get_value(*this);
-        }else{
-            if(node->val.s.find(grammar::C_DOT) != std::string::npos){
-                std::istringstream ss(node->val.s);
-                std::string pre_token, token;
-                std::getline(ss, pre_token, grammar::C_DOT);
-                std::getline(ss, token, grammar::C_DOT);
-                Scope* cur = current;
-                Scope* start = cur->find_scope(pre_token);
-                while(!start){
-                    cur = cur->get_parent();
-                    start = cur->find_scope(pre_token);
-                    if(!start && cur == global){
-                        die(node, "Scope \"" + pre_token + "\" cannot be found");
-                    }
-                }
-                pre_token = token;
-                while(std::getline(ss, token, grammar::C_DOT)){
-                    start = start->find_scope(pre_token);
-                    if(!start){
-                        die(node, "Scope \"" + pre_token + "\" cannot be found");
-                    }
-                    pre_token = token;
-                }
-                ns_variable::Variable* var = start->find_var(pre_token, false);
-                if(!var){
-                    die(node, "Variable has not been declared before trying to access it");
-                }
-                node->val.var = var;
-                return var->get_value(*this);
-            }else{
-                ns_variable::Variable* var = current->find_var(node->val.s, true);
-                if(!var){
-                    die(node, "Variable has not been declared before trying to access it");
-                }
-                node->val.var = var;
-                return var->get_value(*this);
+        /* Commented out because of variable importing. TODO Find a workaround*/
+        //if(node->val.var){
+        //    return node->val.var->get_value(*this);
+        //}else{
+            varscope vs = get_var(node->val.s, node);
+            ns_variable::Variable* var = vs.v;
+            if(!var){
+                die(node, "Variable has not been declared before trying to access it");
             }
-        }
+         //   node->val.var = var;
+            Scope* cur = current;
+            current = vs.s;
+            ns_ast::AST* val = var->get_value(*this);
+            current = cur;
+            return val;
+        //}
     };
 
     ns_ast::AST *Interpreter::i_unary(ns_ast::AST *node) {
@@ -528,11 +510,11 @@ namespace ns_interpreter {
             if(operand->type != VARIABLE){
                 die(operand, "Operand not a valid identifier");
             }
-            varscope vs = get_var_scope(operand->val.s, node);
-            if(!vs.s){
+            Scope* s = get_scope(operand->val.s, node);
+            if(!s){
                 die(operand, "Block does not exist");
             }
-            if(!vs.s->props.is_block){
+            if(!s->props.is_block){
                 die(operand, "Block is not really a block");
             }
             if(import > 0){ //Skip if importing
@@ -541,7 +523,7 @@ namespace ns_interpreter {
             if(start){
                 die(node, "Already issued generate");
             }
-            start = vs.s;
+            start = s;
             return node;
         }else if(op == K_REPR){
             AST* io = interpret(operand, true);
@@ -575,12 +557,13 @@ namespace ns_interpreter {
             if(what->type != VARIABLE || (that->type != VARIABLE)){
                 die(node, "Use statement not using correct identifiers");
             }
-            varscope vs = get_var_scope(what->val.s, what);
+            varscope vs = get_var_scope(what->val.s, what, true);
             if(!vs.s && !vs.v){
                 die(node, "No such scope/variable exists");
             }
             if(vs.v){ //Tis but a variable
-                current->import(that->val.s, vs.v);
+                vs = get_var(what->val.s, what); //Redundant, but needed
+                current->import(that->val.s, vs.v, vs.s);
             }else{
                 current->import(that->val.s, vs.s);
             }
@@ -677,12 +660,12 @@ namespace ns_interpreter {
 
                     int cval = 0;
                     for(auto& e : rresult->val.e){
-                        escope->add(e, new Variable(new AST(cval++, right->token, right->offset_left, right->offset_right), VALUE));
+                        escope->add(e.first, new Variable(new AST(cval++, right->token, right->offset_left, right->offset_right), VALUE));
                     }
                 }
 
             }else{
-                var = get_var_scope(left->val.s, left).v;//current->find_var(left->val.s, false);
+                var = get_var(left->val.s, left).v;//current->find_var(left->val.s, false);
                 if(!var){
                     die(left, "Variable does not exist");
                 }else if(var->get_type() == ENUM){
@@ -700,8 +683,9 @@ namespace ns_interpreter {
             }else if(right->type != LIST){
                 die(right, "Argument is not a list-like");
             }
-            varscope vs = get_var_scope(left->val.s, left);
-            if(!vs.v || !vs.s || vs.v->get_type() != ENUM){
+            varscope vs = get_var(left->val.s, left);
+            if(!vs.v || vs.v->get_type() != ENUM){
+                std::cout << vs.v->get_type() << std::endl;
                 die(left, "Argument is not an enum"); //TODO List compatible?
             }
             AST* e = vs.v->get_raw_value();
@@ -895,7 +879,7 @@ namespace ns_interpreter {
         return node;
     }
 
-    varscope Interpreter::get_var_scope(std::string name, ns_ast::AST* node){
+    varscope Interpreter::get_var_scope(std::string name, ns_ast::AST* node, bool var_and_scope){
         if(name.find(grammar::C_DOT) != std::string::npos){
             std::istringstream ss(name);
             std::string pre_token, token;
@@ -903,6 +887,9 @@ namespace ns_interpreter {
             std::getline(ss, token, grammar::C_DOT);
             Scope* cur = current;
             Scope* start = cur->find_scope(pre_token);
+            if(!start && cur == global){
+                die(node, "Scope \"" + pre_token + "\" cannot be found");
+            }
             while(!start){
                 cur = cur->get_parent();
                 start = cur->find_scope(pre_token);
@@ -919,15 +906,27 @@ namespace ns_interpreter {
                 pre_token = token;
             }
             varscope vs = start->find_varscope(pre_token, false);
-            vs.s = start->find_scope(pre_token, false);
+            if(var_and_scope) {
+                vs.s = start->find_scope(pre_token, false);
+            }
             return vs;
         }else{
             varscope vs = current->find_varscope(name, true);
-            vs.s = current->find_scope(name);
+            if(var_and_scope) {
+                vs.s = current->find_scope(name);
+            }
             return vs;
         }
     }
-    
+
+    varscope Interpreter::get_var(std::string name, ns_ast::AST* node){
+        return get_var_scope(name, node, false);
+    }
+
+    Scope* Interpreter::get_scope(std::string name, ns_ast::AST* node){
+        return get_var_scope(name, node, true).s;
+    }
+
     void Interpreter::go_in(std::string name){
         Scope* into = current->find_scope(name);
         if(!into){

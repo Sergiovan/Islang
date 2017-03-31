@@ -6,6 +6,7 @@
 #define ISLANG_SCOPE_H
 
 #include <map>
+#include <utility>
 
 #include "AST.h"
 #include "Variable.h"
@@ -41,20 +42,19 @@ namespace ns_interpreter {
 
         void add(std::string name, ns_variable::Variable* var);
         void add(std::string name, Scope *scope);
-        void import(std::string name, ns_variable::Variable* var);
+        void import(std::string name, ns_variable::Variable* var, Scope* scope);
         void import(std::string name, Scope *scope);
 
         ns_variable::Variable* find_var(std::string name, bool propagate = false);
         Scope* find_scope(std::string name, bool propagate = false);
         varscope find_varscope(std::string name, bool propagate = false);
 
-
         properties props;
     private:
         Scope* parent;
         std::map<std::string, ns_variable::Variable*> vars;
         std::map<std::string, Scope*> subscopes;
-        std::map<std::string, ns_variable::Variable*> imported_vars;
+        std::map<std::string, std::pair<ns_variable::Variable*, Scope*>> imported_vars;
         std::map<std::string, Scope*> imported_scopes;
     };
 }

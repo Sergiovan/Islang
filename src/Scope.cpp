@@ -2,6 +2,8 @@
 // Created by Sergiovan on 11-Mar-17.
 //
 
+#include <utility>
+
 #include "Interpreter.h"
 #include "Scope.h"
 #include "InterpreterException.h"
@@ -58,8 +60,8 @@ namespace ns_interpreter {
         subscopes[name] = scope;
     }
 
-    void Scope::import(std::string name, ns_variable::Variable *var) {
-        imported_vars[name] = var;
+    void Scope::import(std::string name, ns_variable::Variable *var, Scope* scope) {
+        imported_vars[name] = std::pair<ns_variable::Variable*, Scope*>(var, scope);
     }
 
     void Scope::import(std::string name, Scope *scope) {
@@ -94,9 +96,10 @@ namespace ns_interpreter {
             vs.v = it->second;
             return vs;
         }
-        it = imported_vars.find(name);
-        if(it != imported_vars.end()){
-            vs.v = it->second;
+        auto itt = imported_vars.find(name);
+        if(itt != imported_vars.end()){
+            vs.v = itt->second.first;
+            vs.s = itt->second.second;
             return vs;
         }
         if(propagate && parent) {

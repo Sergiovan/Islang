@@ -73,6 +73,7 @@ I don't know. Maybe you do?
   - Pretty sure there's a memory leak or two somewhere
   - Fix empty blocks showing text on the console
   - Fix `use` and interpreting from different block
+  - Fix `import` from CLI
 - **Testing**
   - Test how good the probabilities are
 - **Git**

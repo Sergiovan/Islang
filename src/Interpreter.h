@@ -45,7 +45,9 @@ namespace ns_interpreter {
         ns_ast::AST* i_binary(ns_ast::AST* node);
         ns_ast::AST* i_block(ns_ast::AST* node);
 
-        varscope get_var_scope(std::string name, ns_ast::AST* node);
+        varscope get_var_scope(std::string name, ns_ast::AST* node, bool var_and_scope = false);
+        varscope get_var(std::string name, ns_ast::AST* node);
+        Scope* get_scope(std::string name, ns_ast::AST* node);
 
         void go_in(std::string name);
         void go_out();

@@ -5,6 +5,7 @@
 #ifndef ISLANG_AST_H
 #define ISLANG_AST_H
 
+#include <map>
 #include <string>
 #include <vector>
 #include "Token.h"
@@ -64,17 +65,17 @@ namespace ns_ast {
     };
 
     struct value { //Should be union, alas, cannot be union :(
-        float                    n = -1;   //Number
-        bool                     b = false;   //Boolean
-        std::string              s = "";   //String
-        int                      v = -1;   //Enum value
-        ns_variable::Variable*   var = nullptr; //Variables
-        std::vector<AST*>        cs = {};  //Complex string
-        std::vector<std::string> e = {};   //Enum
-        list_node                l = {node_type::NONE, {}};   //List
-        unary_node               un = {"", nullptr};  //Unary
-        binary_node              bin = {"", nullptr, nullptr}; //Binary
-        block_node               blk = {NONE_BLOCK, "", {}};
+        float                       n = -1;   //Number
+        bool                        b = false;   //Boolean
+        std::string                 s = "";   //String
+        int                         v = -1;   //Enum value
+        //ns_variable::Variable*      var = nullptr; //Variables TODO Fix
+        std::vector<AST*>           cs = {};  //Complex string
+        std::map<std::string, int>  e = {};   //Enum
+        list_node                   l = {node_type::NONE, {}};   //List
+        unary_node                  un = {"", nullptr};  //Unary
+        binary_node                 bin = {"", nullptr, nullptr}; //Binary
+        block_node                  blk = {NONE_BLOCK, "", {}};
     };
 
     struct AST {
