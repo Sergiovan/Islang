@@ -159,6 +159,51 @@ namespace ns_ast {
         }
     }
 
+    bool AST::is_num() const noexcept {
+        return is<NUMBER>();
+    }
+
+    bool AST::is_bool() const noexcept {
+        return is<BOOLEAN>();
+    }
+
+    bool AST::is_str() const noexcept {
+        return is<STRING>();
+    }
+
+    bool AST::is_cstr() const noexcept {
+        return is<CSTRING>();
+    }
+
+    bool AST::is_any_str() const noexcept {
+        return is<STRING, CSTRING>();
+    }
+
+    bool AST::is_val() const noexcept {
+        return is<VALUE>();
+    }
+
+    bool AST::is_enum() const noexcept {
+        return is<ENUM>();
+    }
+
+    bool AST::is_list() const noexcept {
+        return is<LIST>();
+    }
+
+    bool AST::is_un() const noexcept {
+        return is<UNARY>();
+    }
+
+    bool AST::is_bin() const noexcept {
+        return is<BINARY>();
+    }
+
+    bool AST::is_blk() const noexcept {
+        return is<BLOCK>();
+    }
+
+
     void indent(int depth){
         for(int i = 0; i < depth - 1; i++){
             std::cout << "║ ";

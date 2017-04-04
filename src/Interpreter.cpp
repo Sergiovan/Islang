@@ -695,28 +695,54 @@ namespace ns_interpreter {
                 die(right, "Argument is not a list-like");
             }
             varscope vs = get_var(left->val.s, left);
-            if(!vs.v || vs.v->get_type() != ENUM){
+            if(!vs.v || (vs.v->get_type() != ENUM && vs.v->get_type() != LIST)){
                 std::cout << vs.v->get_type() << std::endl;
-                die(left, "Argument is not an enum"); //TODO List compatible?
+                die(left, "Argument is not an enum or a list");
             }
-            AST* e = vs.v->get_raw_value();
-            if(e->val.e.size() != right->val.l.nodes.size()){
-                die(node, "Probability list and enum don't have same amount of elements");
+            AST* v = vs.v->get_value(*this);
+            if(!v->is<ENUM, LIST>()){
+                die(v, "Variable is not list or enum");
             }
             std::vector<AST*> nodes;
-            for(size_t i = 0; i < right->val.l.nodes.size(); i++){
-                nodes.push_back(new AST(S_IF, new AST((int) i, right->val.l.nodes[i]->token), right->val.l.nodes[i], right->val.l.nodes[i]->token));
+            node_type l_type = VALUE;
+            if(v->is_enum()) {
+                if (v->val.e.size() != right->val.l.nodes.size()) {
+                    die(node, "Probability list and enum don't have same amount of elements");
+                }
+                for (size_t i = 0; i < right->val.l.nodes.size(); i++) {
+                    nodes.push_back(new AST(S_IF, new AST((int) i, right->val.l.nodes[i]->token), right->val.l.nodes[i],
+                                            right->val.l.nodes[i]->token));
+                }
+            }else{
+                if(v->val.l.nodes.size() != right->val.l.nodes.size()) {
+                    std::cout << v->val.l.nodes.size() << " " << right->val.l.nodes.size() << std::endl;
+                    die(node, "Probability list and list don't have same amount of elements");
+                }
+                bool chanced = false;
+                l_type = v->val.l.type;
+                if(v->val.l.nodes[0]->is_bin() && v->val.l.nodes[0]->val.bin.op == S_IF){
+                    chanced = true;
+                }
+                for(size_t i = 0; i < right->val.l.nodes.size(); i++) {
+                    if(chanced){
+                        nodes.push_back(new AST(S_IF, new AST(*v->val.l.nodes[i]->val.bin.left), right->val.l.nodes[i],
+                                                right->val.l.nodes[i]->token));
+                    }else{
+                        nodes.push_back(new AST(S_IF, new AST(*v->val.l.nodes[i]), right->val.l.nodes[i],
+                                                right->val.l.nodes[i]->token));
+                    }
+                }
             }
 
-            return new AST(std::move(nodes), VALUE, node->token, node->offset_left, node->offset_right); // TODO Make better
+            return new AST(std::move(nodes), l_type, node->token, node->offset_left, node->offset_right); // TODO Make better
         }else if(op == S_PICK || op == S_EXPICK || op == S_UNBIASED_PICK || op == S_UNBIASED_EXPICK) {
             AST *ileft = interpret(left, true),
                     *iright = interpret(right, true),
                     *amount = nullptr, *list = nullptr;
-            if (ileft->type == NUMBER && iright->type == LIST) {
+            if (ileft->type == NUMBER && iright->is<LIST, ENUM>()) {
                 amount = ileft;
                 list = iright;
-            } else if (ileft->type == LIST && iright->type == NUMBER) {
+            } else if (ileft->is<LIST, ENUM>() && iright->type == NUMBER) {
                 amount = iright;
                 list = ileft;
             } else {
@@ -729,6 +755,14 @@ namespace ns_interpreter {
             }
             if (num < 1) {
                 die(amount, "Invalid amount");
+            }
+
+            if(list->is_enum()){
+                std::vector<ns_ast::AST*> values;
+                for(auto& val : list->val.e){
+                    values.push_back(new ns_ast::AST(val.second, list->token, list->offset_left, list->offset_right));
+                }
+                list = new ns_ast::AST(std::move(values), VALUE, list->token, list->offset_left, list->offset_right);
             }
 
             if(list->val.l.nodes.size() == 0){

@@ -99,6 +99,28 @@ namespace ns_ast {
             int oleft = 0, int oright = 0);
         void print(int depth = 0);
 
+        template <node_type type>
+            bool is() const noexcept {
+            return type == AST::type;
+        }
+
+        template <node_type fst, node_type scd, node_type... rest>
+            bool is() const noexcept {
+            return fst == type || is<scd, rest...>();
+        }
+
+        bool is_num() const noexcept;
+        bool is_bool() const noexcept;
+        bool is_str() const noexcept;
+        bool is_cstr() const noexcept;
+        bool is_any_str() const noexcept;
+        bool is_val() const noexcept;
+        bool is_enum() const noexcept;
+        bool is_list() const noexcept;
+        bool is_un() const noexcept;
+        bool is_bin() const noexcept;
+        bool is_blk() const noexcept;
+
         //TODO delete function
 
         /*virtual ~AST() = default;
