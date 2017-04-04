@@ -344,7 +344,7 @@ namespace ns_parser {
         return new ns_ast::AST(oper, left, right, tokens[op]); //TODO improve
     }
 
-    ns_ast::AST* Parser::list_expr_enum(){
+    ns_ast::AST* Parser::list_expr_chancify(){
         ns_ast::AST* iden, *list;
         std::string op = grammar::S_SPECIAL_SCOPE;
         ns_lexer::Token& op_tok = token();
@@ -395,7 +395,7 @@ namespace ns_parser {
         return find(&Parser::list_expr_parens) ||
                find(&Parser::list_expr_index)  ||
                find(&Parser::list_expr_pick)   ||
-               find(&Parser::list_expr_enum);
+               find(&Parser::list_expr_chancify);
     }
 
     ns_ast::AST* Parser::boolean_expr_parens(){
@@ -583,14 +583,14 @@ namespace ns_parser {
         read();
         ns_ast::AST* ret = nullptr;
         if(tok.to_string() == grammar::K_REPR) {
-            ns_ast::AST *str = find(&Parser::string), *if_exp = nullptr;
+            ns_ast::AST *expr = find(&Parser::expression), *if_exp = nullptr;
             if (found(grammar::S_IF)) {
                 if_exp = find(&Parser::if_expr);
-                if_exp->val.bin.left = str;
-                str = if_exp;
+                if_exp->val.bin.left = expr;
+                expr = if_exp;
                 next_was_cond_repr = true;
             }
-            ret = new ns_ast::AST(grammar::K_REPR, str, tok);
+            ret = new ns_ast::AST(grammar::K_REPR, expr, tok);
         }else if(tok.to_string() == grammar::K_ELSE){
             if(!was_cond_repr) {
                 throw ParserException(error("Orphan else"));
@@ -598,8 +598,15 @@ namespace ns_parser {
             ns_ast::AST* repr = find(&Parser::repr_statement);
             ret = new ns_ast::AST(grammar::K_ELSE, repr, tok);
         }else{
-            ns_ast::AST* list = find(&Parser::list);
-            ret = new ns_ast::AST(grammar::K_OPTS, (new ns_ast::AST(grammar::S_PICK, list, new ns_ast::AST(1.0f, tok), tok)), tok);
+            ns_ast::AST* list = find(&Parser::list_expr) || find(&Parser::list) || find(&Parser::identifier), *if_exp = nullptr;
+            list = new ns_ast::AST(grammar::S_PICK, list, new ns_ast::AST(1.0f, tok), tok);
+            if (found(grammar::S_IF)) {
+                if_exp = find(&Parser::if_expr);
+                if_exp->val.bin.left = list;
+                list = if_exp;
+                next_was_cond_repr = true;
+            }
+            ret = new ns_ast::AST(grammar::K_OPTS, list, tok);
         }
         return ret;
     }

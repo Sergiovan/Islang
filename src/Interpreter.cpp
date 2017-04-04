@@ -539,7 +539,7 @@ namespace ns_interpreter {
             return new AST(true, node->token, node->offset_left, node->offset_right);
         }else if(op == K_REPR){
             AST* io = interpret(operand, true);
-            if(!io || io->type != STRING){
+            if(!io){
                 die(node, "REPR result is not a string");
             }
             current->props.repr.emplace_back(operand, false);
@@ -554,8 +554,7 @@ namespace ns_interpreter {
             return new AST(true, node->token, node->offset_left, node->offset_right);
         }else if(op == K_OPTS){
             AST* io = interpret(operand, true);
-            if(!io || io->type != STRING || operand->val.bin.left->type != LIST ||
-                operand->val.bin.left->val.l.type != STRING){
+            if(!io){
                 die(node, "Options are not strings");
             }
             current->props.repr.emplace_back(operand, false);

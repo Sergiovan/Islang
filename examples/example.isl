@@ -71,6 +71,6 @@ location island: #Global scope may only contain one location
                     "It tastes delicious!",
                     "It tastes like {fruit}",
                     "It was ok"
-                ]   #Same as "repr [...]*"
+                ]   #Same as "repr [...]*" 
 
 generate island #The last statement in any program can be a `generate`, which tells the interpreter what to show when running

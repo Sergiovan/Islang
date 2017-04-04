@@ -45,7 +45,7 @@ namespace ns_parser {
 
         ns_ast::AST* list_expr_parens();
         ns_ast::AST* list_expr_pick();
-        ns_ast::AST* list_expr_enum();
+        ns_ast::AST* list_expr_chancify();
         ns_ast::AST* list_expr_index();
         ns_ast::AST* list_expr();
 

@@ -54,17 +54,20 @@ I don't know. Maybe you do?
 ## TODO
 - **Syntax**
   - Convert lists with `identifier{probabilities}` syntax
-  - Make enum-to-list work without percentages, somehow
+  - ~~Make enum-to-list work without percentages, somehow~~ (*Scrapped in favor of picking from enums directly*)
   - Picking from enums directly
-  - Allow `opts` to have probabilities in its elements 
-  - Allow `repr` and `opts` to take variables, or any value, really
-  - Allow `repr` and `opts` to be used interchangeably (Add if expression to opts, and allow them to be `else`'d)
+  - ~~Allow `opts` to have probabilities in its elements ~~
+  - ~~Allow `repr` and `opts` to take variables, or any value, really~~
+  - ~~Allow `repr` and `opts` to be used interchangeably (Add if expression to opts, and allow them to be `else`'d)~~
   - ~~Fix program structure being fixed~~
   - Fix the ecbn spec
 - **Interpreter**
   - Stupid-proof reading of files in `Scanner.cpp` (Not that I'd ever read myself out of memory or anything...)
   - Fix the showing of the parser errors, they're all over the place
   - Fix errors when lines are too damn long
+  - Fix stringifier interpreting
+  - Remove AST pointers in favor of smart pointers
+  - Add convenience methods to ASTs
 - **CLI**
   - ~~Add CLI interpreting while running the program~~
   - ~~Add CLI reading of files if none specified~~
