@@ -23,7 +23,7 @@ symbol = ? every other character ? ;
 character = letter | digit | legal_symbol | dot | whitespace | symbol ;
     
 (* Valid names for identifiers *)
-identifier = ["::"] , underscore | letter, {letter | digit | legal_symbol | "."}] ;
+identifier = ["::"] , underscore | letter, {letter | digit | legal_symbol | "."} ;
 
 (* Keywords *)
 kw_else = "else" ;
@@ -54,19 +54,18 @@ is_operator = "->" ;
 (* Types (Literals only) *)
 boolean = "true" | "always" | "false" | "never" | number, ("%" | "^");
 
-integer = digit, {digit} ;
+integer = ["-"], digit, {digit} ;
 number = integer, [".", digit, {digit}] ;
 
-string = '"', {character | ("${", value, "}")}, '"' ;
+string = '"', {character | ("{", value, "}")}, '"' ;
 
-list_element = boolean | number | string | identifier, [if_expr] ;
+list_element = value, [if_expr] ;
 list = "[", list_element , {",", list_element}, "]" ;
 
 enumeration_name = underscore | letter, {letter | digit | legal_symbol} ;
 enumeration = "{", enumeration_name, {",", enumaration_name}, "}" ;
 
 literal = number | string | boolean ;
-literal_extended = literal | list | enumeration ;
 
 (* Expressions that come from a list *)
 list_expr = "(", list_expr, ")"
@@ -94,7 +93,7 @@ decl_statement  = typename, identifier, is_operator, expr ;
 ass_statement   = identifier, is_operator, expr;
 key_statement   = keyword, value ; 
 use_statement   = kw_use, identifier, [kw_as, identifier] ;
-repr_statement  = kw_repr, string, [if_expr], {{whitespace}, kw_else, kw_repr, string, [if_expr]} ;
+repr_statement  = kw_repr, expr, [if_expr], {{whitespace}, kw_else, kw_repr, expr, [if_expr]} ;
 bloc_statement  = blockname, identifier, ["(", boolean_expr, ")"], [":", block] ;
 loc_statement   = kw_location, identifier, ["(", boolean_expr, ")"], [":", block] ;
 gen_statement   = kw_generate, identifier ;
@@ -106,13 +105,11 @@ statement = {whitespace},
     | use_statement
     | repr_statement
     | bloc_statement
+    | imprt_statement
+    | generate_statement
     | expr
 ) ;
 
 block = statement, {statement} ;
 
-grammar = 
-        {imprt_statement},
-        {decl_statement},
-        [loc_statement],
-        [gen_statement];
+grammar = {statement} ;

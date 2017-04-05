@@ -20,34 +20,36 @@
 #include "Parser.h"
 
 namespace ns_interpreter {
+
+    using namespace ns_ast;
+
     Interpreter::Interpreter(std::string cwd) : cwd(cwd){
         using namespace ns_lexer;
         global = current = new Scope();
         special = new Scope();
         start = nullptr;
 
-        special->add("red", new ns_variable::Variable(new ns_ast::AST(91, Token()), ns_ast::VALUE));
-        special->add("dark_red", new ns_variable::Variable(new ns_ast::AST(31, Token()), ns_ast::VALUE));
-        special->add("green", new ns_variable::Variable(new ns_ast::AST(92, Token()), ns_ast::VALUE));
-        special->add("dark_green", new ns_variable::Variable(new ns_ast::AST(32, Token()), ns_ast::VALUE));
-        special->add("yellow", new ns_variable::Variable(new ns_ast::AST(93, Token()), ns_ast::VALUE));
-        special->add("dark_yellow", new ns_variable::Variable(new ns_ast::AST(33, Token()), ns_ast::VALUE));
-        special->add("blue", new ns_variable::Variable(new ns_ast::AST(94, Token()), ns_ast::VALUE));
-        special->add("dark_blue", new ns_variable::Variable(new ns_ast::AST(34, Token()), ns_ast::VALUE));
-        special->add("magenta", new ns_variable::Variable(new ns_ast::AST(95, Token()), ns_ast::VALUE));
-        special->add("dark_magenta", new ns_variable::Variable(new ns_ast::AST(35, Token()), ns_ast::VALUE));
-        special->add("cyan", new ns_variable::Variable(new ns_ast::AST(96, Token()), ns_ast::VALUE));
-        special->add("dark_cyan", new ns_variable::Variable(new ns_ast::AST(36, Token()), ns_ast::VALUE));
-        special->add("gray", new ns_variable::Variable(new ns_ast::AST(97, Token()), ns_ast::VALUE));
-        special->add("dark_gray", new ns_variable::Variable(new ns_ast::AST(37, Token()), ns_ast::VALUE));
+        special->add("red", new ns_variable::Variable(make_ast(91, Token()), ns_ast::VALUE));
+        special->add("dark_red", new ns_variable::Variable(make_ast(31, Token()), ns_ast::VALUE));
+        special->add("green", new ns_variable::Variable(make_ast(92, Token()), ns_ast::VALUE));
+        special->add("dark_green", new ns_variable::Variable(make_ast(32, Token()), ns_ast::VALUE));
+        special->add("yellow", new ns_variable::Variable(make_ast(93, Token()), ns_ast::VALUE));
+        special->add("dark_yellow", new ns_variable::Variable(make_ast(33, Token()), ns_ast::VALUE));
+        special->add("blue", new ns_variable::Variable(make_ast(94, Token()), ns_ast::VALUE));
+        special->add("dark_blue", new ns_variable::Variable(make_ast(34, Token()), ns_ast::VALUE));
+        special->add("magenta", new ns_variable::Variable(make_ast(95, Token()), ns_ast::VALUE));
+        special->add("dark_magenta", new ns_variable::Variable(make_ast(35, Token()), ns_ast::VALUE));
+        special->add("cyan", new ns_variable::Variable(make_ast(96, Token()), ns_ast::VALUE));
+        special->add("dark_cyan", new ns_variable::Variable(make_ast(36, Token()), ns_ast::VALUE));
+        special->add("gray", new ns_variable::Variable(make_ast(97, Token()), ns_ast::VALUE));
+        special->add("dark_gray", new ns_variable::Variable(make_ast(37, Token()), ns_ast::VALUE));
 
         auto seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
         mt = std::mt19937(seed);
     }
 
-    ns_ast::AST* Interpreter::interpret(ns_ast::AST* node, bool all_the_way){
-        using namespace ns_ast;
-        AST* ret = nullptr;
+    AST_p Interpreter::interpret(AST_p node, bool all_the_way){
+        AST_p ret = nullptr;
         switch(node->type){
             case NUMBER:
             case STRING:
@@ -98,7 +100,7 @@ namespace ns_interpreter {
         _generate(s, s->props.level);
     }
 
-    std::string Interpreter::stringified(ns_ast::AST* node){
+    std::string Interpreter::stringified(AST_p node){
         using namespace ns_ast;
         std::stringstream ss;
         if(!node){
@@ -130,7 +132,7 @@ namespace ns_interpreter {
             case LIST:
                 ss << "[";
                 for(auto it = node->val.l.nodes.begin(); it != node->val.l.nodes.end(); ++it){
-                    ns_ast::AST* val = *it;
+                    AST_p val = *it;
                     if(val->type == BINARY && val->val.bin.op == grammar::S_IF){
                         ss << stringified(val->val.bin.left);
                         ss << " ~ ";
@@ -159,7 +161,7 @@ namespace ns_interpreter {
         return ss.str();
     }
 
-    bool Interpreter::truthyness(ns_ast::AST* node){
+    bool Interpreter::truthyness(AST_p node){
         using namespace ns_ast;
         if(!node){
             return false;
@@ -187,10 +189,10 @@ namespace ns_interpreter {
         return false;
     }
 
-    bool Interpreter::equal(ns_ast::AST* left, ns_ast::AST* right){
+    bool Interpreter::equal(AST_p left, AST_p right){
         using namespace ns_ast;
-        AST* ileft  = interpret(left, true),
-           * iright = interpret(right, true);
+        AST_p ileft  = interpret(left, true),
+              iright = interpret(right, true);
         if(ileft->type != iright->type){
             return false;
         }else{
@@ -234,7 +236,7 @@ namespace ns_interpreter {
         return std::uniform_int_distribution<int>(0, limit)(mt);
     }
 
-    std::string Interpreter::error(ns_ast::AST *node, std::string message) {
+    std::string Interpreter::error(AST_p node, std::string message) {
         using namespace color;
         int col = node->token.get_col();
         int line = node->token.get_line();
@@ -248,7 +250,7 @@ namespace ns_interpreter {
         return ss.str();
     }
 
-    void Interpreter::die(ns_ast::AST *node, std::string message) {
+    void Interpreter::die(AST_p node, std::string message) {
         throw InterpreterException(error(node, message));
     }
 
@@ -296,7 +298,7 @@ namespace ns_interpreter {
         current = c;
     }
 
-    ns_ast::AST *Interpreter::i_cstring(ns_ast::AST *node) {
+    AST_p Interpreter::i_cstring(AST_p node) {
         if(!node || node->type != ns_ast::CSTRING){
             throw InterpreterError("Node is not a CSTRING");
         }
@@ -306,10 +308,10 @@ namespace ns_interpreter {
             ss  << stringified(interpret(elem, true));
         }
         ss << '"';
-        return new ns_ast::AST(ss.str(), node->token, node->offset_left, node->offset_right);
+        return make_ast(ss.str(), node->token, node->offset_left, node->offset_right);
     }
 
-    ns_ast::AST *Interpreter::i_list(ns_ast::AST *node) {
+    AST_p Interpreter::i_list(AST_p node) {
         if(!node || node->type != ns_ast::LIST){
             throw InterpreterError("Node is not a LIST");
         }
@@ -325,7 +327,7 @@ namespace ns_interpreter {
         return nullptr;
     }
 
-    bool Interpreter::l_elem_conforms(ns_ast::AST* node){
+    bool Interpreter::l_elem_conforms(AST_p node){
         if(node->val.l.nodes.size() == 0){
             return true;
         }
@@ -333,7 +335,7 @@ namespace ns_interpreter {
         ns_ast::node_type type = ns_ast::NONE;
         std::vector<bool> prob;
 
-        ns_ast::AST* level = node;
+        AST_p level = node;
         while(level->type == ns_ast::LIST){
             levels++;
             if(level->val.l.nodes.size() == 0){
@@ -360,7 +362,7 @@ namespace ns_interpreter {
         return true;
     }
 
-    bool Interpreter::l_elem_conforms(ns_ast::AST* node, int level, ns_ast::node_type type, std::vector<bool>& prob){
+    bool Interpreter::l_elem_conforms(AST_p node, int level, ns_ast::node_type type, std::vector<bool>& prob){
         if(node->type == ns_ast::BINARY){
             if(node->val.bin.op == grammar::S_IF && !prob[(prob.size() - 1) - level]){
                 return false;
@@ -396,11 +398,11 @@ namespace ns_interpreter {
         }
     }
 
-    ns_ast::AST *Interpreter::i_enumeration(ns_ast::AST *node) {
+    AST_p Interpreter::i_enumeration(AST_p node) {
         return nullptr;
     }
 
-    ns_ast::AST *Interpreter::i_variable(ns_ast::AST *node) {
+    AST_p Interpreter::i_variable(AST_p node) {
         if(!node || node->type != ns_ast::VARIABLE){
             throw InterpreterError("Node is not a VARIABLE");
         }
@@ -416,13 +418,13 @@ namespace ns_interpreter {
          //   node->val.var = var;
             Scope* cur = current;
             current = vs.s;
-            ns_ast::AST* val = var->get_value(*this);
+            AST_p val = var->get_value(*this);
             current = cur;
             return val;
         //}
     };
 
-    ns_ast::AST *Interpreter::i_unary(ns_ast::AST *node) {
+    AST_p Interpreter::i_unary(AST_p node) {
         if(!node || node->type != ns_ast::UNARY){
             throw InterpreterError("Node is not UNARY");
         }
@@ -431,14 +433,14 @@ namespace ns_interpreter {
         using namespace ns_variable;
 
         std::string& op = node->val.un.op;
-        ns_ast::AST* operand = node->val.un.operand;
+        AST_p operand = node->val.un.operand;
 
         if(op == K_IMPORT){
             if(operand->type != BINARY || operand->val.bin.op != K_AS){
                 die(node, "Malformed import statement");
             }
-            AST* what = operand->val.bin.left,
-               * that = operand->val.bin.right;
+            AST_p what = operand->val.bin.left,
+                  that = operand->val.bin.right;
             if((what->type != VARIABLE && what->type != STRING) ||
                (that->type != VARIABLE)){
                 die(node, "Import statement not using correct identifiers");
@@ -480,15 +482,15 @@ namespace ns_interpreter {
             go_in(as);
 
             ns_parser::Parser p;
-            AST* program_imported = p.read_file(global ? import : gen_import);
+            AST_p program_imported = p.read_file(global ? import : gen_import);
             interpret(program_imported);
 
             go_out();
             cwd = scwd;
             Interpreter::import--;
-            return new AST(true, node->token, node->offset_left, node->offset_right);
+            return make_ast(true, node->token, node->offset_left, node->offset_right);
         }else if(op == K_NAME){
-            AST* io = interpret(operand, true);
+            AST_p io = interpret(operand, true);
             if(!io || io->type != STRING){
                 die(node, "Name is not a string");
             }
@@ -497,9 +499,9 @@ namespace ns_interpreter {
             }
             current->props.name = stringified(io);
             current->props.nameset = true;
-            return new AST(true, node->token, node->offset_left, node->offset_right);;
+            return make_ast(true, node->token, node->offset_left, node->offset_right);;
         }else if(op == K_APPEAR){
-            AST* io = interpret(operand, true);
+            AST_p io = interpret(operand, true);
             if(!io || io->type != BOOLEAN){
                 die(node, "Appear is not a boolean");
             }
@@ -507,9 +509,9 @@ namespace ns_interpreter {
                 die(node, "Current scope already has an appear value");
             }
             current->props.appear = operand;
-            return new AST(true, node->token, node->offset_left, node->offset_right);
+            return make_ast(true, node->token, node->offset_left, node->offset_right);
         }else if(op == K_COLOR){
-            AST* io = interpret(operand, true);
+            AST_p io = interpret(operand, true);
             if(!io || io->type != VALUE){
                 die(node, "Color is not a value");
             }
@@ -517,7 +519,7 @@ namespace ns_interpreter {
                 die(node, "Current scope already has a color");
             }
             current->props.color = io->val.v;
-            return new AST(true, node->token, node->offset_left, node->offset_right);
+            return make_ast(true, node->token, node->offset_left, node->offset_right);
         }else if(op == K_GENERATE){
             if(operand->type != VARIABLE){
                 die(operand, "Operand not a valid identifier");
@@ -530,20 +532,20 @@ namespace ns_interpreter {
                 die(operand, "Block is not really a block");
             }
             if(import > 0){ //Skip if importing
-                return new AST(false, node->token, node->offset_left, node->offset_right);
+                return make_ast(false, node->token, node->offset_left, node->offset_right);
             }
             if(start){
                 die(node, "Already issued generate");
             }
             start = s;
-            return new AST(true, node->token, node->offset_left, node->offset_right);
+            return make_ast(true, node->token, node->offset_left, node->offset_right);
         }else if(op == K_REPR){
-            AST* io = interpret(operand, true);
+            AST_p io = interpret(operand, true);
             if(!io){
                 die(node, "REPR result is not a string");
             }
             current->props.repr.emplace_back(operand, false);
-            return new AST(true, node->token, node->offset_left, node->offset_right);
+            return make_ast(true, node->token, node->offset_left, node->offset_right);
         }else if(op == K_ELSE){
             if(operand->type != UNARY || (operand->val.un.op != K_REPR && operand->val.un.op != K_OPTS)){
                 die(node, "Else followed by invalid argument");
@@ -551,20 +553,20 @@ namespace ns_interpreter {
             interpret(operand);
             current->props.repr.pop_back();
             current->props.repr.emplace_back(operand->val.un.operand, true);
-            return new AST(true, node->token, node->offset_left, node->offset_right);
+            return make_ast(true, node->token, node->offset_left, node->offset_right);
         }else if(op == K_OPTS){
-            AST* io = interpret(operand, true);
+            AST_p io = interpret(operand, true);
             if(!io){
                 die(node, "Options are not strings");
             }
             current->props.repr.emplace_back(operand, false);
-            return new AST(true, node->token, node->offset_left, node->offset_right);
+            return make_ast(true, node->token, node->offset_left, node->offset_right);
         }else if(op == K_USE){
             if(operand->type != BINARY || operand->val.bin.op != K_AS){
                 die(node, "Malformed use statement");
             }
-            AST* what = operand->val.bin.left,
-               * that = operand->val.bin.right;
+            AST_p what = operand->val.bin.left,
+                  that = operand->val.bin.right;
             if(what->type != VARIABLE || (that->type != VARIABLE)){
                 die(node, "Use statement not using correct identifiers");
             }
@@ -578,9 +580,9 @@ namespace ns_interpreter {
             }else{
                 current->import(that->val.s, vs.s);
             }
-            return new AST(true, node->token, node->offset_left, node->offset_right);
+            return make_ast(true, node->token, node->offset_left, node->offset_right);
         }else if(op == K_NOT){
-            return new AST(!truthyness(interpret(operand, true)), operand->token);
+            return make_ast(!truthyness(interpret(operand, true)), operand->token);
         }else if(op == S_PERCENTAGE){
             if(operand->type != NUMBER){
                 die(node, "Wrong value for percentages");
@@ -588,7 +590,7 @@ namespace ns_interpreter {
             if(operand->val.n > 100.f || operand->val.n < 0.f){
                 die(operand, "Invalid percentage");
             }
-            return new AST(random_number() < operand->val.n, node->token, node->offset_left, node->offset_right);
+            return make_ast(random_number() < operand->val.n, node->token, node->offset_left, node->offset_right);
         }else if(op == S_CARET){
             if(operand->type != NUMBER){
                 die(node, "Wrong value for percentages");
@@ -596,14 +598,14 @@ namespace ns_interpreter {
             if(operand->val.n < 0.f){
                 die(operand, "Invalid number");
             }
-            return new AST(random_number() < ((1.f / operand->val.n) * 100.f), node->token, node->offset_left, node->offset_right);
+            return make_ast(random_number() < ((1.f / operand->val.n) * 100.f), node->token, node->offset_left, node->offset_right);
         }else if(op == S_SPECIAL_SCOPE){
             if(operand->type != VARIABLE){
                 die(node, "What the fuck man, I trusted you");
             }
             Scope* c = current;
             current = special;
-            AST* ret = interpret(operand, true);
+            AST_p ret = interpret(operand, true);
             current = c;
             return ret;
         }else{
@@ -612,7 +614,7 @@ namespace ns_interpreter {
         return nullptr;
     }
 
-    ns_ast::AST *Interpreter::i_binary(ns_ast::AST *node) {
+    AST_p Interpreter::i_binary(AST_p node) {
         if(!node || node->type != ns_ast::BINARY){
             throw InterpreterError("Node is not BINARY");
         }
@@ -621,8 +623,8 @@ namespace ns_interpreter {
         using namespace ns_variable;
 
         std::string& op = node->val.bin.op;
-        AST* left = node->val.bin.left;
-        AST* right = node->val.bin.right;
+        AST_p left = node->val.bin.left;
+        AST_p right = node->val.bin.right;
 
         if(op == S_IS){
             if(left->type != UNARY && left->type != VARIABLE){
@@ -634,7 +636,7 @@ namespace ns_interpreter {
             }
 
             Variable* var = nullptr;
-            AST* rresult = interpret(right, true);
+            AST_p rresult = interpret(right, true);
 
             if(left->type == UNARY){
                 node_type new_type = NONE;
@@ -671,7 +673,7 @@ namespace ns_interpreter {
 
                     int cval = 0;
                     for(auto& e : rresult->val.e){
-                        escope->add(e.first, new Variable(new AST(cval++, right->token, right->offset_left, right->offset_right), VALUE));
+                        escope->add(e.first, new Variable(make_ast(cval++, right->token, right->offset_left, right->offset_right), VALUE));
                     }
                 }
 
@@ -687,7 +689,7 @@ namespace ns_interpreter {
                 var->reset();
                 var->set_value(right);
             }
-            return new AST(var, left->token, left->offset_left, left->offset_right);
+            return make_ast(var, left->token, left->offset_left, left->offset_right);
         }else if(op == S_SPECIAL_SCOPE){
             if(left->type != VARIABLE){
                 die(left, "Argument is not an identifier");
@@ -699,18 +701,18 @@ namespace ns_interpreter {
                 std::cout << vs.v->get_type() << std::endl;
                 die(left, "Argument is not an enum or a list");
             }
-            AST* v = vs.v->get_value(*this);
+            AST_p v = vs.v->get_value(*this);
             if(!v->is<ENUM, LIST>()){
                 die(v, "Variable is not list or enum");
             }
-            std::vector<AST*> nodes;
+            std::vector<AST_p> nodes;
             node_type l_type = VALUE;
             if(v->is_enum()) {
                 if (v->val.e.size() != right->val.l.nodes.size()) {
                     die(node, "Probability list and enum don't have same amount of elements");
                 }
                 for (size_t i = 0; i < right->val.l.nodes.size(); i++) {
-                    nodes.push_back(new AST(S_IF, new AST((int) i, right->val.l.nodes[i]->token), right->val.l.nodes[i],
+                    nodes.push_back(make_ast(S_IF, make_ast((int) i, right->val.l.nodes[i]->token), right->val.l.nodes[i],
                                             right->val.l.nodes[i]->token));
                 }
             }else{
@@ -725,20 +727,20 @@ namespace ns_interpreter {
                 }
                 for(size_t i = 0; i < right->val.l.nodes.size(); i++) {
                     if(chanced){
-                        nodes.push_back(new AST(S_IF, new AST(*v->val.l.nodes[i]->val.bin.left), right->val.l.nodes[i],
+                        nodes.push_back(make_ast(S_IF, make_ast(*v->val.l.nodes[i]->val.bin.left), right->val.l.nodes[i],
                                                 right->val.l.nodes[i]->token));
                     }else{
-                        nodes.push_back(new AST(S_IF, new AST(*v->val.l.nodes[i]), right->val.l.nodes[i],
+                        nodes.push_back(make_ast(S_IF, make_ast(*v->val.l.nodes[i]), right->val.l.nodes[i],
                                                 right->val.l.nodes[i]->token));
                     }
                 }
             }
 
-            return new AST(std::move(nodes), l_type, node->token, node->offset_left, node->offset_right); // TODO Make better
+            return make_ast(std::move(nodes), l_type, node->token, node->offset_left, node->offset_right); // TODO Make better
         }else if(op == S_PICK || op == S_EXPICK || op == S_UNBIASED_PICK || op == S_UNBIASED_EXPICK) {
-            AST *ileft = interpret(left, true),
-                    *iright = interpret(right, true),
-                    *amount = nullptr, *list = nullptr;
+            AST_p ileft = interpret(left, true),
+                  iright = interpret(right, true),
+                  amount = nullptr, list = nullptr;
             if (ileft->type == NUMBER && iright->is<LIST, ENUM>()) {
                 amount = ileft;
                 list = iright;
@@ -758,11 +760,11 @@ namespace ns_interpreter {
             }
 
             if(list->is_enum()){
-                std::vector<ns_ast::AST*> values;
+                std::vector<AST_p> values;
                 for(auto& val : list->val.e){
-                    values.push_back(new ns_ast::AST(val.second, list->token, list->offset_left, list->offset_right));
+                    values.push_back(make_ast(val.second, list->token, list->offset_left, list->offset_right));
                 }
-                list = new ns_ast::AST(std::move(values), VALUE, list->token, list->offset_left, list->offset_right);
+                list = make_ast(std::move(values), VALUE, list->token, list->offset_left, list->offset_right);
             }
 
             if(list->val.l.nodes.size() == 0){
@@ -833,42 +835,42 @@ namespace ns_interpreter {
             delete [] nodes;
             nodes = nullptr;
             if(num == 1){
-                AST* ret = list->val.l.nodes[selected[0]];
+                AST_p ret = list->val.l.nodes[selected[0]];
                 if(ret->type == BINARY && ret->val.bin.op == S_IF){
                     ret = ret->val.bin.left;
                 }
-                return new AST(*ret);
+                return make_ast(*ret);
             }else{
-                std::vector<AST*> ret;
+                std::vector<AST_p> ret;
                 for(auto& i : selected){
-                    AST* elem = list->val.l.nodes[i];
+                    AST_p elem = list->val.l.nodes[i];
                     if(elem->type == BINARY && elem->val.bin.op == S_IF){
                         elem = elem->val.bin.left;
                     }
                     ret.push_back(elem);
                 }
-                return new AST(std::move(ret), list->val.l.type, node->token, node->offset_left, node->offset_right);
+                return make_ast(std::move(ret), list->val.l.type, node->token, node->offset_left, node->offset_right);
             }
 
         }else if(op == S_IF){
-            AST* intd = interpret(left, true);
+            AST_p intd = interpret(left, true);
             if(truthyness(interpret(right, true))){
                 return intd;
             }else{
-                return new AST(std::string("\"\""), node->token, node->offset_left, node->offset_right);
+                return make_ast(std::string("\"\""), node->token, node->offset_left, node->offset_right);
             }
         }else if(op == S_EQUALS || op == S_NOT_EQUALS){
             bool are_equal = equal(left, right);
-            return new AST(are_equal == (op == S_EQUALS), node->token, node->offset_left, node->offset_right);
+            return make_ast(are_equal == (op == S_EQUALS), node->token, node->offset_left, node->offset_right);
         }else if(op == K_AND || op == K_OR ){
             bool is_and = op == K_AND;
             bool left_val = truthyness(interpret(left, true));
             if(left_val != is_and){
-                return new AST(left_val, node->token, node->offset_left, node->offset_right);
+                return make_ast(left_val, node->token, node->offset_left, node->offset_right);
             }
-            return new AST(truthyness(interpret(right, true)), right->token);
+            return make_ast(truthyness(interpret(right, true)), right->token);
         }else if(op == S_SQBRACKETS){
-            AST* ileft = interpret(left, true);
+            AST_p ileft = interpret(left, true);
             if((ileft->type != LIST) || right->type != NUMBER){
                 die(node, "Illegal indexing");
             }
@@ -893,7 +895,7 @@ namespace ns_interpreter {
         return nullptr;
     }
 
-    ns_ast::AST *Interpreter::i_block(ns_ast::AST *node) {
+    AST_p Interpreter::i_block(AST_p node) {
         if(!node || node->type != ns_ast::BLOCK){
             throw InterpreterError("Node is not a BLOCK");
         }
@@ -924,7 +926,7 @@ namespace ns_interpreter {
         return node;
     }
 
-    varscope Interpreter::get_var_scope(std::string name, ns_ast::AST* node, bool var_and_scope){
+    varscope Interpreter::get_var_scope(std::string name, AST_p node, bool var_and_scope){
         if(name.find(grammar::C_DOT) != std::string::npos){
             std::istringstream ss(name);
             std::string pre_token, token;
@@ -964,11 +966,11 @@ namespace ns_interpreter {
         }
     }
 
-    varscope Interpreter::get_var(std::string name, ns_ast::AST* node){
+    varscope Interpreter::get_var(std::string name, AST_p node){
         return get_var_scope(name, node, false);
     }
 
-    Scope* Interpreter::get_scope(std::string name, ns_ast::AST* node){
+    Scope* Interpreter::get_scope(std::string name, AST_p node){
         return get_var_scope(name, node, true).s;
     }
 

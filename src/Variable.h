@@ -15,20 +15,20 @@ namespace ns_variable {
     class Variable {
     public:
         Variable();
-        Variable(ns_ast::AST* value, ns_ast::node_type type);
+        Variable(ns_ast::AST_p value, ns_ast::node_type type);
 
         ns_ast::node_type get_type();
-        void set_value(ns_ast::AST* value);
+        void set_value(ns_ast::AST_p value);
 
-        ns_ast::AST* const get_raw_value();
-        ns_ast::AST* get_value(ns_interpreter::Interpreter& itp);
+        ns_ast::AST_p const get_raw_value();
+        ns_ast::AST_p get_value(ns_interpreter::Interpreter& itp);
 
         void reset();
 
     private:
         ns_ast::node_type type;
-        ns_ast::AST* value;
-        ns_ast::AST* c_value;
+        ns_ast::AST_p value;
+        ns_ast::AST_p c_value;
 
         bool computed;
     };

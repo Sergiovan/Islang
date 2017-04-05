@@ -6,6 +6,7 @@
 #define ISLANG_AST_H
 
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 #include "Token.h"
@@ -17,6 +18,8 @@ namespace ns_variable {
 namespace ns_ast {
 
     struct AST;
+
+    using AST_p = std::shared_ptr<AST>;
 
     enum node_type {
         NUMBER,
@@ -42,26 +45,26 @@ namespace ns_ast {
         NONE_BLOCK
     };
 
-    struct list_node{
+    struct list_node {
         node_type        type;
-        std::vector<AST*> nodes;
+        std::vector<AST_p> nodes;
     };
 
     struct unary_node {
         std::string op;
-        AST* operand;
+        AST_p operand;
     };
 
     struct binary_node {
         std::string op;
-        AST* left;
-        AST* right;
+        AST_p left;
+        AST_p right;
     };
 
     struct block_node {
         block_type type;
         std::string name;
-        std::vector<AST*> statements;
+        std::vector<AST_p> statements;
     };
 
     struct value { //Should be union, alas, cannot be union :(
@@ -70,7 +73,7 @@ namespace ns_ast {
         std::string                 s = "";   //String
         int                         v = -1;   //Enum value
         //ns_variable::Variable*      var = nullptr; //Variables TODO Fix
-        std::vector<AST*>           cs = {};  //Complex string
+        std::vector<AST_p>          cs = {};  //Complex string
         std::map<std::string, int>  e = {};   //Enum
         list_node                   l = {node_type::NONE, {}};   //List
         unary_node                  un = {"", nullptr};  //Unary
@@ -90,12 +93,12 @@ namespace ns_ast {
         AST(std::string s, ns_lexer::Token token, int oleft = 0, int oright = 0);
         AST(ns_variable::Variable *var, std::string varname, ns_lexer::Token token, int oleft = 0, int oright = 0);
         AST(int v, ns_lexer::Token token, int oleft = 0, int oright = 0);
-        AST(std::vector<AST*>&& vec, ns_lexer::Token token, int oleft = 0, int oright = 0);
-        AST(std::vector<AST*>&& vec, node_type type, ns_lexer::Token token, int oleft = 0, int oright = 0);
+        AST(std::vector<AST_p>&& vec, ns_lexer::Token token, int oleft = 0, int oright = 0);
+        AST(std::vector<AST_p>&& vec, node_type type, ns_lexer::Token token, int oleft = 0, int oright = 0);
         AST(std::vector<std::string>&& e, ns_lexer::Token token, int oleft = 0, int oright = 0);
-        AST(std::string op, AST* operand, ns_lexer::Token token, int oleft = 0, int oright = 0);
-        AST(std::string op, AST *left, AST *right, ns_lexer::Token token, int oleft = 0, int oright = 0);
-        AST(block_type type, std::string name, std::vector<AST *> &&statements, ns_lexer::Token token,
+        AST(std::string op, AST_p operand, ns_lexer::Token token, int oleft = 0, int oright = 0);
+        AST(std::string op, AST_p left, AST_p right, ns_lexer::Token token, int oleft = 0, int oright = 0);
+        AST(block_type type, std::string name, std::vector<AST_p> &&statements, ns_lexer::Token token,
             int oleft = 0, int oright = 0);
         void print(int depth = 0);
 
@@ -131,6 +134,11 @@ namespace ns_ast {
     };
 
     void indent(int depth);
+
+    template<typename... Args>
+    AST_p make_ast(Args... args){
+        return std::make_shared<AST>(std::forward<Args>(args)...);
+    }
 }
 
 

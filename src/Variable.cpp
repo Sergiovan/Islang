@@ -12,7 +12,7 @@ namespace ns_variable {
 
     }
 
-    Variable::Variable(ns_ast::AST* value, ns_ast::node_type type) : type(type), value(value), c_value(nullptr),
+    Variable::Variable(ns_ast::AST_p value, ns_ast::node_type type) : type(type), value(value), c_value(nullptr),
                                                                      computed(false){
 
     }
@@ -21,15 +21,15 @@ namespace ns_variable {
         return type;
     }
 
-    void Variable::set_value(ns_ast::AST* value){
+    void Variable::set_value(ns_ast::AST_p value){
         Variable::value = value;
     }
 
-    ns_ast::AST* const Variable::get_raw_value(){
+    ns_ast::AST_p const Variable::get_raw_value(){
         return value;
     }
 
-    ns_ast::AST* Variable::get_value(ns_interpreter::Interpreter& itp){
+    ns_ast::AST_p Variable::get_value(ns_interpreter::Interpreter& itp){
         if(!computed) {
             c_value = itp.interpret(value, true);
             computed = true;
@@ -38,10 +38,7 @@ namespace ns_variable {
     }
 
     void Variable::reset(){
-        if(c_value != value) {
-            delete c_value;
-        }
-        c_value = nullptr;
+        c_value.reset();
         computed = false;
     }
 

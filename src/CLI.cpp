@@ -70,7 +70,7 @@ namespace ns_cli{
                 return;
             }
         }else if(command == "execute" || command == "e"){
-            ns_ast::AST* line = nullptr;
+            ns_ast::AST_p line = nullptr;
             ns_parser::Parser prs;
             line = prs.read_string(rest);
             if(!line){

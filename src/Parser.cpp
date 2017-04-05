@@ -13,11 +13,13 @@
 
 namespace ns_parser {
 
+    using namespace ns_ast;
+
     Parser::Parser() : tokens(), index(0), ll(0), rl(0), limits(){
 
     }
 
-    ns_ast::AST *Parser::read_file(std::string filename) {
+    AST_p Parser::read_file(std::string filename) {
         ns_lexer::Lexer lex;
         tokens = lex.read_file(filename);
         if(!lex.okay()){
@@ -29,7 +31,7 @@ namespace ns_parser {
         return run();
     }
 
-    ns_ast::AST *Parser::read_string(std::string string) {
+    AST_p Parser::read_string(std::string string) {
         ns_lexer::Lexer lex;
         tokens = lex.read_string(string);
         if(!lex.okay()){
@@ -77,24 +79,24 @@ namespace ns_parser {
         }
     }
 
-    ns_ast::AST *Parser::run(bool string) {
+    AST_p Parser::run(bool string) {
         try {
             sanitize();
             if(!string) {
-                std::vector<ns_ast::AST *> stmts;
+                std::vector<AST_p > stmts;
                 int as = next();
                 index = as;
                 while(!found(grammar::token_type::END)){
-                    stmts.push_back((ns_ast::AST *) find(&Parser::statement));
+                    stmts.push_back((AST_p ) find(&Parser::statement));
                     if (found(grammar::token_type::END)) {
                         break;
                     }
                     expect(grammar::token_type::NEWLINE);
                     index = next();
                 }
-                return new ns_ast::AST(ns_ast::PROGRAM, "", std::move(stmts), tokens[0]);
+                return make_ast(ns_ast::PROGRAM, "", std::move(stmts), tokens[0]);
             }else{
-                ns_ast::AST* ret = find(&Parser::statement);
+                AST_p ret = find(&Parser::statement);
                 return ret;
             }
         }catch(ParserException& ex){
@@ -137,10 +139,10 @@ namespace ns_parser {
         return tokens[index];
     }
 
-    ParserPromise Parser::find(std::function<ns_ast::AST *(Parser* parser)> what) {
+    ParserPromise Parser::find(std::function<AST_p (Parser* parser)> what) {
         auto esize = ex_stack.size();
         return ParserPromise([this, &what, esize](){
-            ns_ast::AST* node = nullptr;
+            AST_p node = nullptr;
             int pin = this->index;
             auto psize = this->limits.size();
             try {
@@ -160,16 +162,16 @@ namespace ns_parser {
         }, tokens[index]);
     }
 
-    ns_ast::AST* Parser::boolean() {
+    AST_p Parser::boolean() {
         using namespace grammar;
         if(!found(token_subtype::KEYWORD_BOOLEAN) && !found(token_type::BOOLEAN)){
             expect(token_type::BOOLEAN);
         }
-        ns_ast::AST* ret = nullptr;
+        AST_p ret = nullptr;
         if(found(K_ALWAYS) || found(K_TRUE)){
-            ret = new ns_ast::AST(true, token());
+            ret = make_ast(true, token());
         }else if(found(K_NEVER) || found(K_FALSE)){
-            ret = new ns_ast::AST(false, token());
+            ret = make_ast(false, token());
         }else{
             ns_lexer::Token& tok = token();
             auto length = tok.to_string().length();
@@ -181,17 +183,17 @@ namespace ns_parser {
             }catch (...){
                 throw ParserException(error("Not a valid boolean"));
             }
-            ret = new ns_ast::AST(op, new ns_ast::AST(fl, tok), token());
+            ret = make_ast(op, make_ast(fl, tok), token());
         }
         read();
         return ret;
     }
 
-    ns_ast::AST *Parser::number() {
+    AST_p Parser::number() {
         expect(grammar::token_type::NUMBER);
-        ns_ast::AST* ret = nullptr;
+        AST_p ret = nullptr;
         try {
-            ret = new ns_ast::AST(std::stof(token().to_string()), token());
+            ret = make_ast(std::stof(token().to_string()), token());
         }catch (...){
             throw ParserException(error("Not a valid number"));
         }
@@ -199,12 +201,12 @@ namespace ns_parser {
         return ret;
     }
 
-    ns_ast::AST *Parser::string() {
+    AST_p Parser::string() {
         expect(grammar::token_type::STRING);
-        ns_ast::AST* ret = nullptr;
+        AST_p ret = nullptr;
         if(token().to_string()[token().to_string().length() - 1] == grammar::C_OPEN_BRACKET){ //Cstring
             ns_lexer::Token& tok = token();
-            std::vector<ns_ast::AST*> nodes = {new ns_ast::AST(token().to_string(), tok)};
+            std::vector<AST_p> nodes = {make_ast(token().to_string(), tok)};
             int sindex = tok.get_index();
             int length = 0;
             while(token().to_string()[token().to_string().length() - 1] == grammar::C_OPEN_BRACKET){
@@ -214,146 +216,145 @@ namespace ns_parser {
                     throw ParserError(error("Complex string does not terminate correctly"));
                 }
                 push(index, next);
-                ns_ast::AST* val = find(&Parser::value);
+                AST_p val = find(&Parser::value);
                 pop();
                 nodes.push_back(val);
                 expect(grammar::token_type::STRING);
-                nodes.push_back(new ns_ast::AST(token().to_string(), token()));
+                nodes.push_back(make_ast(token().to_string(), token()));
                 length = (int) (token().get_index() - sindex + token().to_string().length());
             }
-            ret = new ns_ast::AST(std::move(nodes), tok, 0, length);
+            ret = make_ast(std::move(nodes), tok, 0, length);
         }else{
-            ret = new ns_ast::AST(token().to_string(), token());
+            ret = make_ast(token().to_string(), token());
         }
         read();
         return ret;
     }
 
-    ns_ast::AST* Parser::identifier(){
+    AST_p Parser::identifier(){
         bool special = false;
-        ns_ast::AST* ret = nullptr;
+        AST_p ret = nullptr;
         if(found(grammar::S_SPECIAL_SCOPE)){
             special = true;
             read();
         }
         expect(grammar::token_type::IDENTIFIER);
         if(!special){
-            ret = new ns_ast::AST(nullptr, token().to_string(), token());
+            ret = make_ast(nullptr, token().to_string(), token());
         }else{
-            ret = new ns_ast::AST(grammar::S_SPECIAL_SCOPE, new ns_ast::AST(nullptr, token().to_string(), token(), 3), token());
+            ret = make_ast(grammar::S_SPECIAL_SCOPE, make_ast(nullptr, token().to_string(), token(), 3), token());
         }
         read();
         return ret;
     }
 
-    ns_ast::AST *Parser::list_element() {
-        ns_ast::AST* ret = nullptr, *val = nullptr, *prob = nullptr;
+    AST_p Parser::list_element() {
+        AST_p ret = nullptr, val = nullptr, prob = nullptr;
         ns_lexer::Token& tok = token();
         int oright = tok.get_index();
-        val = find(&Parser::value); //TODO Upgrade to value()
+        val = find(&Parser::value);
         if(found(grammar::S_IF)){
             read();
             std::string boolean = token().to_string();
             if(boolean.back() != grammar::C_CARET && boolean.back() != grammar::C_PERCENTAGE){
-                delete val;
                 throw ParserException(error("Invalid boolean"));
             }
             oright = (int) (token().get_index() - oright + boolean.size());
             prob = find(&Parser::boolean);
-            ret = new ns_ast::AST(grammar::S_IF, val, prob, tok, 0, oright);
+            ret = make_ast(grammar::S_IF, val, prob, tok, 0, oright);
         }else{
             ret = val;
         }
         return ret;
     }
 
-    ns_ast::AST *Parser::list() {
+    AST_p Parser::list() {
         expect(grammar::S_OPEN_SQBRACKET);
         ns_lexer::Token& tok = token();
         read();
-        std::vector<ns_ast::AST*> list_elems;
-        list_elems.push_back((ns_ast::AST*) find(&Parser::list_element));
+        std::vector<AST_p> list_elems;
+        list_elems.push_back((AST_p) find(&Parser::list_element));
         while(found(grammar::S_COMMA)){
             read();
-            list_elems.push_back((ns_ast::AST*) find(&Parser::list_element));
+            list_elems.push_back((AST_p) find(&Parser::list_element));
         }
         expect(grammar::S_CLOSE_SQBRACKET);
-        ns_ast::AST* ret = new ns_ast::AST(std::move(list_elems), ns_ast::node_type::NONE, tok, 0, token().get_index() - tok.get_index());
+        AST_p ret = make_ast(std::move(list_elems), ns_ast::node_type::NONE, tok, 0, token().get_index() - tok.get_index());
         read();
         return ret;
     }
 
-    ns_ast::AST *Parser::enumeration_name() {
+    AST_p Parser::enumeration_name() {
         expect(grammar::token_type::IDENTIFIER);
-        ns_ast::AST* ret = new ns_ast::AST(nullptr, token().to_string(), token());
+        AST_p ret = make_ast(nullptr, token().to_string(), token());
         read();
         return ret;
     }
 
-    ns_ast::AST *Parser::enumeration() {
+    AST_p Parser::enumeration() {
         expect(grammar::S_OPEN_BRACKET);
         ns_lexer::Token& tok = token();
         read();
         std::vector<std::string> enum_elems;
-        enum_elems.push_back(((ns_ast::AST*) find(&Parser::enumeration_name))->val.s);
+        enum_elems.push_back(((AST_p) find(&Parser::enumeration_name))->val.s);
         while(found(grammar::S_COMMA)){
             read();
-            enum_elems.push_back(((ns_ast::AST*) find(&Parser::enumeration_name))->val.s);
+            enum_elems.push_back(((AST_p) find(&Parser::enumeration_name))->val.s);
         }
         expect(grammar::S_CLOSE_BRACKET);
-        ns_ast::AST* ret = new ns_ast::AST(std::move(enum_elems), tok, 0, token().get_index() - tok.get_index());
+        AST_p ret = make_ast(std::move(enum_elems), tok, 0, token().get_index() - tok.get_index());
         read();
         return ret;
     }
 
-    ns_ast::AST *Parser::literal() {
+    AST_p Parser::literal() {
         return find(&Parser::boolean) || find(&Parser::string) || find(&Parser::number);
     }
 
-    ns_ast::AST* Parser::list_expr_parens(){
+    AST_p Parser::list_expr_parens(){
         expect(grammar::S_OPEN_PARENTHESIS);
         read();
-        ns_ast::AST* ret = find(&Parser::list_expr);
+        AST_p ret = find(&Parser::list_expr);
         expect(grammar::S_CLOSE_PARENTHESIS);
         read();
         return ret;
     }
 
-    ns_ast::AST* Parser::list_expr_pick(){
+    AST_p Parser::list_expr_pick(){
         using namespace grammar;
         int op = firstof({S_PICK, S_EXPICK, S_UNBIASED_PICK, S_UNBIASED_EXPICK});
         if(op == -1){
             throw ParserException(error("Not a list expression"));
         }
         std::string oper = tokens[op].to_string();
-        ns_ast::AST* left, *right;
+        AST_p left, right;
         if(index == op){
-            left = new ns_ast::AST(1.0f, token());
+            left = make_ast(1.0f, token());
             read();
         }else{
             push(index, op);
-            left = find(&Parser::list_expr) ||find(&Parser::list) || find(&Parser::identifier) || find(&Parser::number);
+            left = find(&Parser::list_expr) || find(&Parser::list) || find(&Parser::identifier) || find(&Parser::number);
             pop();
             read();
         }
         try{
-            right = find(&Parser::list_expr) ||find(&Parser::list) || find(&Parser::identifier) || find(&Parser::number);
+            right = find(&Parser::list_expr) || find(&Parser::list) || find(&Parser::identifier) || find(&Parser::number);
         }catch(ParserException& ex){
-            right = new ns_ast::AST(1.0f, token());
+            right = make_ast(1.0f, token());
         }
-        return new ns_ast::AST(oper, left, right, tokens[op]); //TODO improve
+        return make_ast(oper, left, right, tokens[op]); //TODO improve
     }
 
-    ns_ast::AST* Parser::list_expr_chancify(){
-        ns_ast::AST* iden, *list;
+    AST_p Parser::list_expr_chancify(){
+        AST_p iden, list;
         std::string op = grammar::S_SPECIAL_SCOPE;
         ns_lexer::Token& op_tok = token();
         iden = find(&Parser::identifier);
         expect(grammar::S_OPEN_BRACKET);
         read();
         ns_lexer::Token& tok = token();
-        std::vector<ns_ast::AST*> probs;
-        ns_ast::AST* curval = find(&Parser::boolean);
+        std::vector<AST_p> probs;
+        AST_p curval = find(&Parser::boolean);
         if(curval->type != ns_ast::UNARY){
             throw ParserException(error("Invalid boolean"));
         }
@@ -367,13 +368,13 @@ namespace ns_parser {
             probs.push_back(curval);
         }
         expect(grammar::S_CLOSE_BRACKET);
-        list = new ns_ast::AST(std::move(probs), ns_ast::BOOLEAN, tok);
+        list = make_ast(std::move(probs), ns_ast::BOOLEAN, tok);
         read();
-        return new ns_ast::AST(op, iden, list, op_tok); //TODO Improve
+        return make_ast(op, iden, list, op_tok); //TODO Improve
     }
 
-    ns_ast::AST* Parser::list_expr_index(){
-        ns_ast::AST *list, *integer;
+    AST_p Parser::list_expr_index(){
+        AST_p list, integer;
         int start = lastof({grammar::S_OPEN_SQBRACKET});
         if(start == -1 || start == index){
             throw ParserException(error("Not indexing"));
@@ -387,40 +388,40 @@ namespace ns_parser {
         integer = find(&Parser::number);
         expect(grammar::S_CLOSE_SQBRACKET);
         read();
-        return new ns_ast::AST(grammar::S_SQBRACKETS, list, integer, tok);
+        return make_ast(grammar::S_SQBRACKETS, list, integer, tok);
     }
 
 
-    ns_ast::AST *Parser::list_expr() {
+    AST_p Parser::list_expr() {
         return find(&Parser::list_expr_parens) ||
                find(&Parser::list_expr_index)  ||
                find(&Parser::list_expr_pick)   ||
                find(&Parser::list_expr_chancify);
     }
 
-    ns_ast::AST* Parser::boolean_expr_parens(){
+    AST_p Parser::boolean_expr_parens(){
         expect(grammar::S_OPEN_PARENTHESIS);
         read();
-        ns_ast::AST* ret = find(&Parser::boolean_expr);
+        AST_p ret = find(&Parser::boolean_expr);
         expect(grammar::S_CLOSE_PARENTHESIS);
         read();
         return ret;
     }
 
-    ns_ast::AST* Parser::boolean_expr_unary(){
+    AST_p Parser::boolean_expr_unary(){
         expect(grammar::K_NOT);
         ns_lexer::Token& tok = token();
         read();
-        ns_ast::AST* operand = find(&Parser::boolean_expr) || find(&Parser::boolean) || find(&Parser::identifier);
-        return new ns_ast::AST(tok.to_string(), operand, tok); //TODO Improve
+        AST_p operand = find(&Parser::boolean_expr) || find(&Parser::boolean) || find(&Parser::identifier);
+        return make_ast(tok.to_string(), operand, tok); //TODO Improve
     }
 
-    ns_ast::AST* Parser::boolean_expr_binary(){
+    AST_p Parser::boolean_expr_binary(){
         int op_pos = firstof({grammar::K_AND, grammar::K_OR});
         if(op_pos == -1){
             throw ParserException(error("Not AND/OR expression"));
         }
-        ns_ast::AST *left = nullptr, *right = nullptr;
+        AST_p left = nullptr, right = nullptr;
         std::string op = tokens[op_pos].to_string();
         push(index, op_pos);
         left = find(&Parser::boolean_expr) || find(&Parser::boolean) || find(&Parser::identifier);
@@ -428,15 +429,15 @@ namespace ns_parser {
         expect(op);
         read();
         right = find(&Parser::boolean_expr) || find(&Parser::boolean) || find(&Parser::identifier);
-        return new ns_ast::AST(op, left, right, tokens[op_pos]); //TODO Improve
+        return make_ast(op, left, right, tokens[op_pos]); //TODO Improve
     }
 
-    ns_ast::AST* Parser::boolean_expr_comparison(){
+    AST_p Parser::boolean_expr_comparison(){
         int op_pos = firstof({grammar::S_EQUALS, grammar::S_NOT_EQUALS});
         if(op_pos == -1){
             throw ParserException(error("Not =/~= expression"));
         }
-        ns_ast::AST *left = nullptr, *right = nullptr;
+        AST_p left = nullptr, right = nullptr;
         std::string op = tokens[op_pos].to_string();
         push(index, op_pos);
         left = find(&Parser::value);
@@ -444,19 +445,19 @@ namespace ns_parser {
         expect(op);
         read();
         right = find(&Parser::value);
-        return new ns_ast::AST(op, left, right, tokens[op_pos]); //TODO Improve
+        return make_ast(op, left, right, tokens[op_pos]); //TODO Improve
     }
 
 
-    ns_ast::AST *Parser::boolean_expr() {
+    AST_p Parser::boolean_expr() {
         return find(&Parser::boolean_expr_parens) ||
                find(&Parser::boolean_expr_unary)  ||
                find(&Parser::boolean_expr_binary)   ||
                find(&Parser::boolean_expr_comparison);
     }
 
-    ns_ast::AST *Parser::value() {
-        ns_ast::AST* ret = nullptr;
+    AST_p Parser::value() {
+        AST_p ret = nullptr;
         if(found(grammar::S_OPEN_PARENTHESIS)){
             read();
             ret = find(&Parser::value);
@@ -472,16 +473,16 @@ namespace ns_parser {
         return ret;
     }
 
-    ns_ast::AST* Parser::if_expr() {
+    AST_p Parser::if_expr() {
         expect(grammar::S_IF);
         ns_lexer::Token& tok = token();
         read();
-        ns_ast::AST* val = find(&Parser::value);
-        return new ns_ast::AST(grammar::S_IF, nullptr, val, tok); //TODO make better
+        AST_p val = find(&Parser::value);
+        return make_ast(grammar::S_IF, nullptr, val, tok); //TODO make better
     }
 
-    ns_ast::AST *Parser::expression() {
-        ns_ast::AST* ret = nullptr;
+    AST_p Parser::expression() {
+        AST_p ret = nullptr;
         if(found(grammar::S_OPEN_PARENTHESIS)){
             read();
             ret = find(&Parser::expression);
@@ -493,11 +494,11 @@ namespace ns_parser {
         return ret;
     }
 
-    ns_ast::AST *Parser::import_statement() {
+    AST_p Parser::import_statement() {
         expect(grammar::K_IMPORT);
         ns_lexer::Token& tok = token();
         read();
-        ns_ast::AST *what = nullptr, *that = nullptr;
+        AST_p what = nullptr, that = nullptr;
         ns_lexer::Token& stok = token();
         what = find(&Parser::identifier) || find(&Parser::string);
         if(what->type == ns_ast::UNARY || what->type == ns_ast::CSTRING){
@@ -517,22 +518,22 @@ namespace ns_parser {
             auto begin = what->val.s.find_first_not_of("\"");
             auto end   = what->val.s.find_last_not_of("\"");
             std::string as = what->val.s.substr(begin, end - begin + 1);
-            that = new ns_ast::AST(nullptr, as, tok);
+            that = make_ast(nullptr, as, tok);
         }
-        return new ns_ast::AST(grammar::K_IMPORT, new ns_ast::AST(grammar::K_AS, what, that, stok), tok);
+        return make_ast(grammar::K_IMPORT, make_ast(grammar::K_AS, what, that, stok), tok);
     }
 
-    ns_ast::AST *Parser::declaration_statement() {
+    AST_p Parser::declaration_statement() {
         expect(grammar::token_subtype::KEYWORD_TYPENAME);
         ns_lexer::Token& type = token();
         read();
-        ns_ast::AST* assnmnt = find(&Parser::assignment_statement);
-        assnmnt->val.bin.left = new ns_ast::AST(type.to_string(), assnmnt->val.bin.left, type);
+        AST_p assnmnt = find(&Parser::assignment_statement);
+        assnmnt->val.bin.left = make_ast(type.to_string(), assnmnt->val.bin.left, type);
         return assnmnt;
     }
 
-    ns_ast::AST *Parser::assignment_statement() {
-        ns_ast::AST* what = nullptr, *that = nullptr;
+    AST_p Parser::assignment_statement() {
+        AST_p what = nullptr, that = nullptr;
         what = find(&Parser::identifier);
         if(what->type == ns_ast::UNARY){
             throw ParserException(error("Invalid assignment target"));
@@ -541,22 +542,22 @@ namespace ns_parser {
         ns_lexer::Token& tok = token();
         read();
         that = find(&Parser::expression);
-        return new ns_ast::AST(grammar::S_IS, what, that, tok);
+        return make_ast(grammar::S_IS, what, that, tok);
     }
 
-    ns_ast::AST *Parser::keyword_statement() {
+    AST_p Parser::keyword_statement() {
         expect(grammar::token_subtype::KEYWORD_BLOCKPROP);
         ns_lexer::Token& tok = token();
         read();
-        ns_ast::AST* val = find(&Parser::value);
-        return new ns_ast::AST(tok.to_string(), val, tok);
+        AST_p val = find(&Parser::value);
+        return make_ast(tok.to_string(), val, tok);
     }
 
-    ns_ast::AST *Parser::use_statement() {
+    AST_p Parser::use_statement() {
         expect(grammar::K_USE);
         ns_lexer::Token& tok = token();
         read();
-        ns_ast::AST *what = nullptr, *that = nullptr;
+        AST_p what = nullptr, that = nullptr;
         ns_lexer::Token& stok = token();
         what = find(&Parser::identifier);
         if(what->type == ns_ast::UNARY){
@@ -572,46 +573,47 @@ namespace ns_parser {
             }
         }else{
             std::string as = what->val.s.substr(what->val.s.find_last_of(grammar::C_DOT) + 1);
-            that = new ns_ast::AST(nullptr, as, what->token);
+            that = make_ast(nullptr, as, what->token);
         }
-        return new ns_ast::AST(grammar::K_USE, new ns_ast::AST(grammar::K_AS, what, that, stok), tok);
+        return make_ast(grammar::K_USE, make_ast(grammar::K_AS, what, that, stok), tok);
     }
 
-    ns_ast::AST* Parser::repr_statement() {
+    AST_p Parser::repr_statement() {
         expect(grammar::token_subtype::KEYWORD_REPR);
         ns_lexer::Token& tok = token();
         read();
-        ns_ast::AST* ret = nullptr;
+        AST_p ret = nullptr;
         if(tok.to_string() == grammar::K_REPR) {
-            ns_ast::AST *expr = find(&Parser::expression), *if_exp = nullptr;
+            AST_p expr = find(&Parser::expression), if_exp = nullptr;
             if (found(grammar::S_IF)) {
                 if_exp = find(&Parser::if_expr);
                 if_exp->val.bin.left = expr;
                 expr = if_exp;
                 next_was_cond_repr = true;
             }
-            ret = new ns_ast::AST(grammar::K_REPR, expr, tok);
+            ret = make_ast(grammar::K_REPR, expr, tok);
         }else if(tok.to_string() == grammar::K_ELSE){
             if(!was_cond_repr) {
                 throw ParserException(error("Orphan else"));
             }
-            ns_ast::AST* repr = find(&Parser::repr_statement);
-            ret = new ns_ast::AST(grammar::K_ELSE, repr, tok);
+            AST_p repr = find(&Parser::repr_statement);
+            ret = make_ast(grammar::K_ELSE, repr, tok);
         }else{
-            ns_ast::AST* list = find(&Parser::list_expr) || find(&Parser::list) || find(&Parser::identifier), *if_exp = nullptr;
-            list = new ns_ast::AST(grammar::S_PICK, list, new ns_ast::AST(1.0f, tok), tok);
+            AST_p list = find(&Parser::list_expr) || find(&Parser::list) || find(&Parser::identifier),
+                  if_exp = nullptr;
+            list = make_ast(grammar::S_PICK, list, make_ast(1.0f, tok), tok);
             if (found(grammar::S_IF)) {
                 if_exp = find(&Parser::if_expr);
                 if_exp->val.bin.left = list;
                 list = if_exp;
                 next_was_cond_repr = true;
             }
-            ret = new ns_ast::AST(grammar::K_OPTS, list, tok);
+            ret = make_ast(grammar::K_OPTS, list, tok);
         }
         return ret;
     }
 
-    ns_ast::AST *Parser::block_statement() {
+    AST_p Parser::block_statement() {
         expect(grammar::token_subtype::KEYWORD_BLOCKNAME);
         ns_lexer::Token& tok = token();
         std::string bts = tok.to_string();
@@ -626,8 +628,8 @@ namespace ns_parser {
             throw ParserException(error("Illegal block type"));
         }
         read();
-        ns_ast::AST* name = nullptr, *app = nullptr;
-        std::vector<ns_ast::AST*> stmts;
+        AST_p name = nullptr, app = nullptr;
+        std::vector<AST_p> stmts;
         name = find(&Parser::identifier);
         if(name->type == ns_ast::UNARY){
             throw ParserException(error("Invalid block name"));
@@ -639,7 +641,7 @@ namespace ns_parser {
             app = find(&Parser::boolean);
             expect(grammar::S_CLOSE_PARENTHESIS);
             read();
-            app = new ns_ast::AST(grammar::K_APPEAR, app, app->token);
+            app = make_ast(grammar::K_APPEAR, app, app->token);
         }
         if(app){
             stmts.push_back(app);
@@ -655,7 +657,7 @@ namespace ns_parser {
             int indentation = bindentation;
             while(indentation == bindentation){
                 if(!found(grammar::token_type::NEWLINE)){
-                    stmts.push_back((ns_ast::AST*) find(&Parser::statement));
+                    stmts.push_back((AST_p) find(&Parser::statement));
                 }
                 read();
                 startindex = index;
@@ -664,28 +666,23 @@ namespace ns_parser {
             index = startindex - 1;
             push(ll, rl);
         }
-        return new ns_ast::AST(bt, name->val.s, std::move(stmts), tok);
+        return make_ast(bt, name->val.s, std::move(stmts), tok);
     }
 
-    ns_ast::AST *Parser::location_statement() {
-        expect(grammar::K_LOCATION);
-        return find(&Parser::block_statement);
-    }
-
-    ns_ast::AST *Parser::generate_statement() {
+    AST_p Parser::generate_statement() {
         expect(grammar::K_GENERATE);
         ns_lexer::Token& tok = token();
         read();
-        ns_ast::AST* iden = find(&Parser::identifier);
+        AST_p iden = find(&Parser::identifier);
         if(iden->type == ns_ast::UNARY){
             throw ParserException(error("Invalid generate target"));
         }
-        return new ns_ast::AST(grammar::K_GENERATE, iden, tok);
+        return make_ast(grammar::K_GENERATE, iden, tok);
     }
 
-    ns_ast::AST *Parser::statement() {
+    AST_p Parser::statement() {
         push(index, line_end());
-        ns_ast::AST* ret =
+        AST_p ret =
                find(&Parser::declaration_statement) ||
                find(&Parser::assignment_statement)  ||
                find(&Parser::keyword_statement)     ||

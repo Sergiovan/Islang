@@ -21,55 +21,54 @@ namespace ns_parser {
     class Parser {
     public:
         Parser();
-        ns_ast::AST* read_file(std::string filename);
-        ns_ast::AST* read_string(std::string string); //TODO Errors
+        ns_ast::AST_p read_file(std::string filename);
+        ns_ast::AST_p read_string(std::string string); //TODO Errors
     private:
         void sanitize();
-        ns_ast::AST* run(bool string = false);
+        ns_ast::AST_p run(bool string = false);
 
         void read();
         int whitespace();
         ns_lexer::Token& token();
 
-        ParserPromise find(std::function<ns_ast::AST*(Parser* parser)> what);
+        ParserPromise find(std::function<ns_ast::AST_p(Parser* parser)> what);
 
-        ns_ast::AST* boolean();
-        ns_ast::AST* number();
-        ns_ast::AST* string();
-        ns_ast::AST* identifier();
-        ns_ast::AST* list_element();
-        ns_ast::AST* list();
-        ns_ast::AST* enumeration_name();
-        ns_ast::AST* enumeration();
-        ns_ast::AST* literal();
+        ns_ast::AST_p boolean();
+        ns_ast::AST_p number();
+        ns_ast::AST_p string();
+        ns_ast::AST_p identifier();
+        ns_ast::AST_p list_element();
+        ns_ast::AST_p list();
+        ns_ast::AST_p enumeration_name();
+        ns_ast::AST_p enumeration();
+        ns_ast::AST_p literal();
 
-        ns_ast::AST* list_expr_parens();
-        ns_ast::AST* list_expr_pick();
-        ns_ast::AST* list_expr_chancify();
-        ns_ast::AST* list_expr_index();
-        ns_ast::AST* list_expr();
+        ns_ast::AST_p list_expr_parens();
+        ns_ast::AST_p list_expr_pick();
+        ns_ast::AST_p list_expr_chancify();
+        ns_ast::AST_p list_expr_index();
+        ns_ast::AST_p list_expr();
 
-        ns_ast::AST* boolean_expr_parens();
-        ns_ast::AST* boolean_expr_unary();
-        ns_ast::AST* boolean_expr_binary();
-        ns_ast::AST* boolean_expr_comparison();
-        ns_ast::AST* boolean_expr();
+        ns_ast::AST_p boolean_expr_parens();
+        ns_ast::AST_p boolean_expr_unary();
+        ns_ast::AST_p boolean_expr_binary();
+        ns_ast::AST_p boolean_expr_comparison();
+        ns_ast::AST_p boolean_expr();
 
-        ns_ast::AST* value();
-        ns_ast::AST* if_expr();
-        ns_ast::AST* expression();
+        ns_ast::AST_p value();
+        ns_ast::AST_p if_expr();
+        ns_ast::AST_p expression();
 
-        ns_ast::AST* import_statement();
-        ns_ast::AST* declaration_statement();
-        ns_ast::AST* assignment_statement();
-        ns_ast::AST* keyword_statement();
-        ns_ast::AST* use_statement();
-        ns_ast::AST* repr_statement();
-        ns_ast::AST* block_statement();
-        ns_ast::AST* location_statement();
-        ns_ast::AST* generate_statement();
+        ns_ast::AST_p import_statement();
+        ns_ast::AST_p declaration_statement();
+        ns_ast::AST_p assignment_statement();
+        ns_ast::AST_p keyword_statement();
+        ns_ast::AST_p use_statement();
+        ns_ast::AST_p repr_statement();
+        ns_ast::AST_p block_statement();
+        ns_ast::AST_p generate_statement();
 
-        ns_ast::AST* statement();
+        ns_ast::AST_p statement();
 
         bool found(std::string content);
         bool found(grammar::token_type type);

@@ -20,7 +20,7 @@ namespace ns_cli {
     private:
         ns_interpreter::Interpreter itp;
         std::string file, cwd;
-        ns_ast::AST *program;
+        ns_ast::AST_p program;
         bool parsed = false;
     };
 }

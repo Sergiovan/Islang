@@ -43,12 +43,12 @@ namespace ns_ast {
         val.v = v;
     }
 
-    AST::AST(std::vector<AST*>&& vec, ns_lexer::Token token, int oleft, int oright) : AST(token, oleft, oright){
+    AST::AST(std::vector<AST_p>&& vec, ns_lexer::Token token, int oleft, int oright) : AST(token, oleft, oright){
         AST::type = CSTRING;
         val.cs = vec;
     }
 
-    AST::AST(std::vector<AST*>&& vec, node_type type, ns_lexer::Token token, int oleft, int oright) : AST(token, oleft, oright){
+    AST::AST(std::vector<AST_p>&& vec, node_type type, ns_lexer::Token token, int oleft, int oright) : AST(token, oleft, oright){
         AST::type = LIST;
         val.l = {type, vec};
     }
@@ -60,22 +60,22 @@ namespace ns_ast {
         }
     }
 
-    AST::AST(std::string op, AST* operand, ns_lexer::Token token, int oleft, int oright) : AST(token, oleft, oright){
+    AST::AST(std::string op, AST_p operand, ns_lexer::Token token, int oleft, int oright) : AST(token, oleft, oright){
         AST::type = UNARY;
         val.un = {op, operand};
-    };
+    }
 
-    AST::AST(std::string op, AST *left, AST *right, ns_lexer::Token token, int oleft, int oright) : AST(token, oleft, oright){
+    AST::AST(std::string op, AST_p left, AST_p right, ns_lexer::Token token, int oleft, int oright) : AST(token, oleft, oright){
         AST::type = BINARY;
         val.bin = {op, left, right};
-    };
+    }
 
-    AST::AST(block_type type, std::string name, std::vector<AST *> &&statements, ns_lexer::Token token, int oleft,
+    AST::AST(block_type type, std::string name, std::vector<AST_p>&& statements, ns_lexer::Token token, int oleft,
              int oright)
         : AST(token, oleft, oright){
         AST::type = BLOCK;
         val.blk = {type, name, statements};
-    };
+    }
 
     void AST::print(int depth){
         using std::cout;

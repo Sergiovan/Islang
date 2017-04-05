@@ -60,7 +60,7 @@ I don't know. Maybe you do?
   - ~~Allow `repr` and `opts` to take variables, or any value, really~~
   - ~~Allow `repr` and `opts` to be used interchangeably (Add if expression to opts, and allow them to be `else`'d)~~
   - ~~Fix program structure being fixed~~
-  - Fix the ecbn spec
+  - ~~Fix the ecbn spec~~
 - **Interpreter**
   - Stupid-proof reading of files in `Scanner.cpp` (Not that I'd ever read myself out of memory or anything...)
   - Fix the showing of the parser errors, they're all over the place
@@ -75,10 +75,11 @@ I don't know. Maybe you do?
   - ~~Ctrl+C support~~
 - **Bugs**
   - ~~Fix this random access error? Where is this even coming from?~~
-  - Pretty sure there's a memory leak or two somewhere
+  - ~~Pretty sure there's a memory leak or two somewhere~~ (*No more naked pointers, it's all smart*)
   - ~~Fix empty blocks showing text on the console~~ (*Feature removed in favor of showing them*)
   - ~~Fix `use` and interpreting from different block~~
   - ~~Fix `import` from CLI~~
+  - Ctrl+C does some silly things with the > for input
 - **Testing**
   - Test how good the probabilities are
 - **Git**

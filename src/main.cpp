@@ -114,7 +114,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-/*    ns_lexer::Lexer lex;
+*    ns_lexer::Lexer lex;
 
     auto tokens = lex.read_file("dat/example.isl");
     if(lex.okay()) {

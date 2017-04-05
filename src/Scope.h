@@ -23,11 +23,11 @@ namespace ns_interpreter {
         bool is_block, nameset;
         ns_ast::block_type type;
 
-        ns_ast::AST* appear;
+        ns_ast::AST_p appear;
         std::string name;
         int color, level;
 
-        std::vector<std::pair<ns_ast::AST*, bool>> repr;
+        std::vector<std::pair<ns_ast::AST_p, bool>> repr;
     };
 
     class Scope {

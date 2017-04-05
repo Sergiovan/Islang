@@ -13,14 +13,14 @@
 namespace ns_parser {
     class ParserPromise {
     public:
-        ParserPromise(std::function<ns_ast::AST*()> func, ns_lexer::Token& token, ns_ast::AST* node = nullptr);
-        operator ns_ast::AST*();
+        ParserPromise(std::function<ns_ast::AST_p()> func, ns_lexer::Token& token, ns_ast::AST_p node = nullptr);
+        operator ns_ast::AST_p();
         ParserPromise& operator||(ParserPromise&& rhs);
         bool good();
     private:
-        std::function<ns_ast::AST*()> func;
+        std::function<ns_ast::AST_p()> func;
         ns_lexer::Token& token;
-        ns_ast::AST* node;
+        ns_ast::AST_p node;
         bool evaluated;
     };
 }

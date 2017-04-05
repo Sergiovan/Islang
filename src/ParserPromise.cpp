@@ -7,12 +7,12 @@
 
 namespace ns_parser {
 
-    ParserPromise::ParserPromise(std::function<ns_ast::AST*()> func, ns_lexer::Token& token, ns_ast::AST *node)
+    ParserPromise::ParserPromise(std::function<ns_ast::AST_p()> func, ns_lexer::Token& token, ns_ast::AST_p node)
     : func(func), token(token), node(node), evaluated(false){
 
     }
 
-    ParserPromise::operator ns_ast::AST*() {
+    ParserPromise::operator ns_ast::AST_p() {
         if(good()){
             return node;
         }else{
@@ -20,7 +20,7 @@ namespace ns_parser {
         }
     }
 
-    ParserPromise &ParserPromise::operator||(ParserPromise &&rhs) {
+    ParserPromise& ParserPromise::operator||(ParserPromise &&rhs) {
         return good() ? *this : rhs;
     }
 
